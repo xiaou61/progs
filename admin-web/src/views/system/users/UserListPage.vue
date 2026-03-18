@@ -4,39 +4,73 @@ import type { RoleItem } from '@/api/roles'
 import { fetchRoles } from '@/api/roles'
 import {
   assignUserRole,
+  clearUserViolation,
+  createUser,
   fetchUsers,
   freezeUser,
+  markUserViolation,
   resetUserPassword,
   type UserItem,
   unfreezeUser
 } from '@/api/users'
 import { validateResetPassword } from '@/utils/role-governance'
+import {
+  buildCreateUserPayload,
+  createEmptyUserCreateForm,
+  type UserCreateFormValues,
+  validateCreateUserForm
+} from '@/utils/user-governance'
 
 const users = ref<UserItem[]>([])
 const roles = ref<RoleItem[]>([])
 const loading = ref(false)
 const actionLoading = ref(false)
+const createLoading = ref(false)
 const error = ref('')
 const success = ref('')
 const selectedUserId = ref<number | null>(null)
 
-const form = reactive({
+const governanceForm = reactive({
   roleCode: '',
   freezeReason: '后台复核中，账号暂时停用',
-  newPassword: ''
+  newPassword: '',
+  violationReason: '存在异常行为，已进入人工复核'
 })
 
+const createForm = reactive<UserCreateFormValues>(createEmptyUserCreateForm())
+
 const selectedUser = computed(() => users.value.find((user) => user.id === selectedUserId.value) ?? null)
+const roleOptions = computed(() => roles.value.map((role) => ({
+  code: role.roleCode,
+  label: `${role.roleName} / ${role.roleCode}`
+})))
+const summaryCards = computed(() => {
+  const total = users.value.length
+  const enabled = users.value.filter((user) => user.status === 'ENABLED').length
+  const disabled = users.value.filter((user) => user.status === 'DISABLED').length
+  const flagged = users.value.filter((user) => user.violationMarked).length
+  return [
+    { label: '账号总量', value: `${total}` },
+    { label: '正常账号', value: `${enabled}` },
+    { label: '冻结账号', value: `${disabled}` },
+    { label: '违规标记', value: `${flagged}` }
+  ]
+})
 
 function clearNotice() {
   error.value = ''
   success.value = ''
 }
 
+function resetCreateForm() {
+  Object.assign(createForm, createEmptyUserCreateForm())
+}
+
 function applySelection(user: UserItem | null) {
   selectedUserId.value = user?.id ?? null
-  form.roleCode = user?.roleCode ?? ''
-  form.newPassword = ''
+  governanceForm.roleCode = user?.roleCode ?? ''
+  governanceForm.newPassword = ''
+  governanceForm.violationReason = user?.violationReason?.trim() || '存在异常行为，已进入人工复核'
   clearNotice()
 }
 
@@ -56,6 +90,10 @@ async function loadData(preferredUserId?: number | null) {
     const [nextUsers, nextRoles] = await Promise.all([fetchUsers(), fetchRoles()])
     users.value = nextUsers
     roles.value = nextRoles
+
+    if (!nextRoles.some((role) => role.roleCode === createForm.roleCode) && nextRoles.length > 0) {
+      createForm.roleCode = nextRoles[0]?.roleCode ?? createForm.roleCode
+    }
 
     if (preferredUserId != null) {
       const preferredUser = nextUsers.find((user) => user.id === preferredUserId) ?? null
@@ -80,7 +118,7 @@ async function handleFreeze() {
   actionLoading.value = true
   clearNotice()
   try {
-    await freezeUser(selectedUser.value.id, form.freezeReason.trim() || '后台冻结账号')
+    await freezeUser(selectedUser.value.id, governanceForm.freezeReason.trim() || '后台冻结账号')
     success.value = `已冻结 ${selectedUser.value.realName}`
     await loadData(selectedUser.value.id)
   } catch (actionError) {
@@ -115,7 +153,7 @@ async function handleResetPassword() {
     return
   }
 
-  const validationMessage = validateResetPassword(form.newPassword)
+  const validationMessage = validateResetPassword(governanceForm.newPassword)
   if (validationMessage) {
     error.value = validationMessage
     return
@@ -124,9 +162,9 @@ async function handleResetPassword() {
   actionLoading.value = true
   clearNotice()
   try {
-    await resetUserPassword(selectedUser.value.id, form.newPassword.trim())
+    await resetUserPassword(selectedUser.value.id, governanceForm.newPassword.trim())
     success.value = `已重置 ${selectedUser.value.realName} 的密码`
-    form.newPassword = ''
+    governanceForm.newPassword = ''
     await loadData(selectedUser.value.id)
   } catch (actionError) {
     error.value = actionError instanceof Error ? actionError.message : '重置密码失败'
@@ -140,8 +178,7 @@ async function handleAssignRole() {
     error.value = '请先选择一个用户'
     return
   }
-
-  if (!form.roleCode) {
+  if (!governanceForm.roleCode) {
     error.value = '请选择一个角色'
     return
   }
@@ -149,7 +186,7 @@ async function handleAssignRole() {
   actionLoading.value = true
   clearNotice()
   try {
-    const updatedUser = await assignUserRole(selectedUser.value.id, form.roleCode)
+    const updatedUser = await assignUserRole(selectedUser.value.id, governanceForm.roleCode)
     success.value = `已将 ${updatedUser.realName} 调整为 ${updatedUser.roleCode}`
     await loadData(updatedUser.id)
   } catch (actionError) {
@@ -159,12 +196,82 @@ async function handleAssignRole() {
   }
 }
 
+async function handleMarkViolation() {
+  if (!selectedUser.value) {
+    error.value = '请先选择一个用户'
+    return
+  }
+  if (!governanceForm.violationReason.trim()) {
+    error.value = '请输入违规原因'
+    return
+  }
+
+  actionLoading.value = true
+  clearNotice()
+  try {
+    await markUserViolation(selectedUser.value.id, governanceForm.violationReason.trim())
+    success.value = `已为 ${selectedUser.value.realName} 添加违规标记`
+    await loadData(selectedUser.value.id)
+  } catch (actionError) {
+    error.value = actionError instanceof Error ? actionError.message : '违规标记失败'
+  } finally {
+    actionLoading.value = false
+  }
+}
+
+async function handleClearViolation() {
+  if (!selectedUser.value) {
+    error.value = '请先选择一个用户'
+    return
+  }
+  if (!governanceForm.violationReason.trim()) {
+    error.value = '请输入解除说明'
+    return
+  }
+
+  actionLoading.value = true
+  clearNotice()
+  try {
+    await clearUserViolation(selectedUser.value.id, governanceForm.violationReason.trim())
+    success.value = `已解除 ${selectedUser.value.realName} 的违规标记`
+    await loadData(selectedUser.value.id)
+  } catch (actionError) {
+    error.value = actionError instanceof Error ? actionError.message : '解除违规标记失败'
+  } finally {
+    actionLoading.value = false
+  }
+}
+
+async function handleCreateUser() {
+  clearNotice()
+  const validationMessage = validateCreateUserForm(createForm)
+  if (validationMessage) {
+    error.value = validationMessage
+    return
+  }
+
+  createLoading.value = true
+  try {
+    const createdUser = await createUser(buildCreateUserPayload(createForm))
+    success.value = `已创建账号 ${createdUser.studentNo}`
+    resetCreateForm()
+    await loadData(createdUser.id)
+  } catch (createError) {
+    error.value = createError instanceof Error ? createError.message : '创建用户失败'
+  } finally {
+    createLoading.value = false
+  }
+}
+
 function statusLabel(status: string) {
   if (status === 'DISABLED') {
     return '已冻结'
   }
-  if (status === 'DELETED') {
+  if (status === 'CANCELLED') {
     return '已注销'
+  }
+  if (status === 'DELETED') {
+    return '已删除'
   }
   return '正常'
 }
@@ -179,13 +286,20 @@ onMounted(() => {
     <header class="header">
       <div>
         <p class="eyebrow">System Governance</p>
-        <h1>用户治理</h1>
-        <p>这里现在接的是后台真实接口，可以直接查看用户状态、调整角色、冻结账号和重置密码。</p>
+        <h1>用户治理工作台</h1>
+        <p>账号开通、角色调整、冻结恢复、密码重置和违规治理都收敛在这里，方便管理员一站式处理。</p>
       </div>
       <button class="ghost-button" type="button" :disabled="loading" @click="loadData(selectedUserId)">
-        {{ loading ? '刷新中...' : '刷新列表' }}
+        {{ loading ? '刷新中...' : '刷新数据' }}
       </button>
     </header>
+
+    <section class="summary-grid">
+      <article v-for="item in summaryCards" :key="item.label" class="summary-card">
+        <strong>{{ item.value }}</strong>
+        <span>{{ item.label }}</span>
+      </article>
+    </section>
 
     <p v-if="error" class="message error-message">{{ error }}</p>
     <p v-if="success" class="message success-message">{{ success }}</p>
@@ -195,9 +309,9 @@ onMounted(() => {
         <div class="panel-head">
           <div>
             <h2>用户列表</h2>
-            <p>{{ users.length }} 个账号</p>
+            <p>{{ users.length }} 个账号，点击行切换右侧治理对象。</p>
           </div>
-          <span class="muted">{{ loading ? '正在拉取最新数据' : '点击行可切换右侧操作对象' }}</span>
+          <span class="muted">{{ loading ? '正在拉取最新数据' : '支持账号开通后立即选中处理' }}</span>
         </div>
 
         <table class="table">
@@ -206,6 +320,7 @@ onMounted(() => {
               <th>学号</th>
               <th>姓名</th>
               <th>角色</th>
+              <th>违规</th>
               <th>状态</th>
             </tr>
           </thead>
@@ -223,88 +338,171 @@ onMounted(() => {
               <td>{{ user.realName }}</td>
               <td>{{ user.roleCode }}</td>
               <td>
+                <span class="flag-chip" :class="{ flagged: user.violationMarked }">
+                  {{ user.violationMarked ? '已标记' : '正常' }}
+                </span>
+              </td>
+              <td>
                 <span class="status-chip" :class="user.status.toLowerCase()">
                   {{ statusLabel(user.status) }}
                 </span>
               </td>
             </tr>
             <tr v-if="!loading && users.length === 0">
-              <td colspan="4" class="empty-cell">暂无用户数据</td>
+              <td colspan="5" class="empty-cell">暂无用户数据</td>
             </tr>
           </tbody>
         </table>
       </section>
 
-      <section class="panel detail-panel">
-        <div class="panel-head">
-          <div>
-            <h2>{{ selectedUser ? `${selectedUser.realName} 的治理面板` : '请选择一个用户' }}</h2>
-            <p v-if="selectedUser">学号 {{ selectedUser.studentNo }} · 当前角色 {{ selectedUser.roleCode }}</p>
-          </div>
-        </div>
-
-        <template v-if="selectedUser">
-          <dl class="profile-grid">
+      <aside class="side-column">
+        <section class="panel detail-panel">
+          <div class="panel-head compact-head">
             <div>
-              <dt>手机号</dt>
-              <dd>{{ selectedUser.phone }}</dd>
+              <h2>{{ selectedUser ? `${selectedUser.realName} 的治理面板` : '请选择一个用户' }}</h2>
+              <p v-if="selectedUser">学号 {{ selectedUser.studentNo }} · 当前角色 {{ selectedUser.roleCode }}</p>
             </div>
+          </div>
+
+          <template v-if="selectedUser">
+            <dl class="profile-grid">
+              <div class="profile-card">
+                <dt>手机号</dt>
+                <dd>{{ selectedUser.phone }}</dd>
+              </div>
+              <div class="profile-card">
+                <dt>账号状态</dt>
+                <dd>{{ statusLabel(selectedUser.status) }}</dd>
+              </div>
+              <div class="profile-card">
+                <dt>违规标记</dt>
+                <dd>{{ selectedUser.violationMarked ? '已标记' : '未标记' }}</dd>
+              </div>
+              <div class="profile-card">
+                <dt>治理重点</dt>
+                <dd>{{ selectedUser.violationReason || '当前无违规说明' }}</dd>
+              </div>
+            </dl>
+
+            <div v-if="selectedUser.violationMarked" class="notice-card danger-notice">
+              <strong>当前处于违规观察状态</strong>
+              <p>{{ selectedUser.violationReason || '请补充治理说明' }}</p>
+            </div>
+
+            <div class="field">
+              <label>角色分配</label>
+              <select v-model="governanceForm.roleCode">
+                <option disabled value="">请选择角色</option>
+                <option v-for="role in roleOptions" :key="role.code" :value="role.code">
+                  {{ role.label }}
+                </option>
+              </select>
+              <button class="primary-button" type="button" :disabled="actionLoading" @click="handleAssignRole">
+                {{ actionLoading ? '处理中...' : '更新角色' }}
+              </button>
+            </div>
+
+            <div class="field">
+              <label>违规治理说明</label>
+              <textarea
+                v-model="governanceForm.violationReason"
+                rows="3"
+                placeholder="请输入违规原因或解除说明，便于留痕"
+              />
+              <div class="action-row">
+                <button class="warning-button" type="button" :disabled="actionLoading" @click="handleMarkViolation">
+                  {{ actionLoading ? '处理中...' : '标记违规' }}
+                </button>
+                <button class="secondary-button" type="button" :disabled="actionLoading" @click="handleClearViolation">
+                  {{ actionLoading ? '处理中...' : '解除违规' }}
+                </button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>冻结原因</label>
+              <textarea
+                v-model="governanceForm.freezeReason"
+                rows="3"
+                placeholder="请输入冻结原因，便于运营留痕"
+              />
+            </div>
+
+            <div class="action-row">
+              <button
+                v-if="selectedUser.status !== 'DISABLED'"
+                class="danger-button"
+                type="button"
+                :disabled="actionLoading"
+                @click="handleFreeze"
+              >
+                {{ actionLoading ? '处理中...' : '冻结账号' }}
+              </button>
+              <button
+                v-else
+                class="secondary-button"
+                type="button"
+                :disabled="actionLoading"
+                @click="handleUnfreeze"
+              >
+                {{ actionLoading ? '处理中...' : '恢复账号' }}
+              </button>
+            </div>
+
+            <div class="field">
+              <label>重置密码</label>
+              <input v-model="governanceForm.newPassword" type="password" placeholder="请输入 8 位及以上新密码" />
+              <button class="primary-button" type="button" :disabled="actionLoading" @click="handleResetPassword">
+                {{ actionLoading ? '处理中...' : '重置密码' }}
+              </button>
+            </div>
+          </template>
+
+          <p v-else class="empty-detail">从左侧选择一个用户后，这里会显示具体治理动作。</p>
+        </section>
+
+        <section class="panel create-panel">
+          <div class="panel-head compact-head">
             <div>
-              <dt>账号状态</dt>
-              <dd>{{ statusLabel(selectedUser.status) }}</dd>
+              <h2>开通新账号</h2>
+              <p>账号由后台开通，用户端只负责登录和后续资料维护。</p>
             </div>
-          </dl>
-
-          <div class="field">
-            <label>角色分配</label>
-            <select v-model="form.roleCode">
-              <option disabled value="">请选择角色</option>
-              <option v-for="role in roles" :key="role.roleCode" :value="role.roleCode">
-                {{ role.roleName }} / {{ role.roleCode }}
-              </option>
-            </select>
-            <button class="primary-button" type="button" :disabled="actionLoading" @click="handleAssignRole">
-              {{ actionLoading ? '提交中...' : '更新角色' }}
-            </button>
+            <button class="ghost-button small-button" type="button" @click="resetCreateForm">重置表单</button>
           </div>
 
-          <div class="field">
-            <label>冻结原因</label>
-            <textarea v-model="form.freezeReason" rows="3" placeholder="请输入冻结原因，便于运营留痕"></textarea>
+          <div class="field-grid">
+            <label class="field">
+              <span>学号</span>
+              <input v-model="createForm.studentNo" type="text" placeholder="例如 S20260123" />
+            </label>
+            <label class="field">
+              <span>姓名</span>
+              <input v-model="createForm.realName" type="text" placeholder="请输入姓名" />
+            </label>
+            <label class="field">
+              <span>手机号</span>
+              <input v-model="createForm.phone" type="text" placeholder="请输入手机号" />
+            </label>
+            <label class="field">
+              <span>角色</span>
+              <select v-model="createForm.roleCode">
+                <option v-for="role in roleOptions" :key="role.code" :value="role.code">
+                  {{ role.label }}
+                </option>
+              </select>
+            </label>
           </div>
 
-          <div class="action-row">
-            <button
-              v-if="selectedUser.status !== 'DISABLED'"
-              class="danger-button"
-              type="button"
-              :disabled="actionLoading"
-              @click="handleFreeze"
-            >
-              {{ actionLoading ? '处理中...' : '冻结账号' }}
-            </button>
-            <button
-              v-else
-              class="secondary-button"
-              type="button"
-              :disabled="actionLoading"
-              @click="handleUnfreeze"
-            >
-              {{ actionLoading ? '处理中...' : '恢复账号' }}
-            </button>
-          </div>
+          <label class="field">
+            <span>初始密码</span>
+            <input v-model="createForm.password" type="password" placeholder="请输入 8 位及以上初始密码" />
+          </label>
 
-          <div class="field">
-            <label>重置密码</label>
-            <input v-model="form.newPassword" type="password" placeholder="请输入 8 位及以上新密码" />
-            <button class="primary-button" type="button" :disabled="actionLoading" @click="handleResetPassword">
-              {{ actionLoading ? '处理中...' : '重置密码' }}
-            </button>
-          </div>
-        </template>
-
-        <p v-else class="empty-detail">从左侧选择一个用户后，这里会显示具体治理动作。</p>
-      </section>
+          <button class="primary-button full-button" type="button" :disabled="createLoading" @click="handleCreateUser">
+            {{ createLoading ? '创建中...' : '创建用户账号' }}
+          </button>
+        </section>
+      </aside>
     </section>
   </main>
 </template>
@@ -343,9 +541,36 @@ h2 {
 .header p:last-child,
 .panel-head p,
 .muted,
-.empty-detail {
+.empty-detail,
+.notice-card p,
+.summary-card span {
   margin: 8px 0 0;
   color: #5a6878;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.summary-card,
+.panel {
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 24px 60px rgba(32, 48, 66, 0.08);
+}
+
+.summary-card {
+  padding: 22px 24px;
+}
+
+.summary-card strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #173149;
+  font-size: 34px;
 }
 
 .message {
@@ -367,21 +592,22 @@ h2 {
 
 .layout {
   display: grid;
-  grid-template-columns: 1.2fr 0.9fr;
+  grid-template-columns: minmax(0, 1.3fr) minmax(360px, 0.95fr);
   gap: 20px;
+  align-items: start;
 }
 
-.panel {
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 24px 60px rgba(32, 48, 66, 0.08);
+.side-column {
+  display: grid;
+  gap: 20px;
 }
 
 .table-panel {
   overflow: hidden;
 }
 
-.detail-panel {
+.detail-panel,
+.create-panel {
   padding: 24px;
 }
 
@@ -391,6 +617,10 @@ h2 {
   gap: 16px;
   align-items: flex-start;
   padding: 24px 24px 16px;
+}
+
+.compact-head {
+  padding: 0 0 18px;
 }
 
 .table {
@@ -416,7 +646,7 @@ tbody tr:hover {
 }
 
 tbody tr.active {
-  background: rgba(234, 216, 194, 0.5);
+  background: linear-gradient(90deg, rgba(240, 224, 208, 0.6), rgba(255, 255, 255, 0.9));
 }
 
 .sub-text {
@@ -426,7 +656,8 @@ tbody tr.active {
   font-size: 13px;
 }
 
-.status-chip {
+.status-chip,
+.flag-chip {
   display: inline-flex;
   align-items: center;
   padding: 6px 12px;
@@ -440,21 +671,34 @@ tbody tr.active {
   color: #17603d;
 }
 
-.status-chip.disabled {
+.status-chip.disabled,
+.status-chip.cancelled,
+.status-chip.deleted {
   background: rgba(194, 62, 46, 0.12);
   color: #9f2e21;
 }
 
-.status-chip.deleted {
-  background: rgba(90, 104, 120, 0.12);
-  color: #4a5563;
+.flag-chip {
+  background: rgba(96, 114, 132, 0.12);
+  color: #4d6072;
+}
+
+.flag-chip.flagged {
+  background: rgba(177, 74, 47, 0.14);
+  color: #9f2e21;
 }
 
 .profile-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-  margin: 18px 0 24px;
+  gap: 14px;
+  margin: 0 0 20px;
+}
+
+.profile-card {
+  padding: 16px;
+  border-radius: 18px;
+  background: #f8fafc;
 }
 
 dt {
@@ -467,6 +711,28 @@ dd {
   margin: 0;
   color: #1d2a3a;
   font-weight: 600;
+  line-height: 1.6;
+}
+
+.notice-card {
+  margin-bottom: 18px;
+  padding: 16px 18px;
+  border-radius: 18px;
+}
+
+.notice-card strong {
+  display: block;
+  color: #1d2a3a;
+}
+
+.danger-notice {
+  background: rgba(194, 62, 46, 0.1);
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .field {
@@ -475,6 +741,7 @@ dd {
   margin-bottom: 18px;
 }
 
+.field span,
 label {
   color: #3a4655;
   font-weight: 600;
@@ -528,6 +795,10 @@ button:disabled {
   box-shadow: 0 14px 30px rgba(32, 48, 66, 0.08);
 }
 
+.small-button {
+  padding-inline: 14px;
+}
+
 .primary-button {
   background: linear-gradient(135deg, #cc6d37 0%, #e58f45 100%);
   color: #fff;
@@ -538,9 +809,18 @@ button:disabled {
   color: #17603d;
 }
 
+.warning-button {
+  background: rgba(181, 114, 38, 0.14);
+  color: #9a5d16;
+}
+
 .danger-button {
   background: rgba(194, 62, 46, 0.12);
   color: #9f2e21;
+}
+
+.full-button {
+  width: 100%;
 }
 
 .empty-cell {
@@ -548,7 +828,11 @@ button:disabled {
   color: #7b8796;
 }
 
-@media (max-width: 1080px) {
+@media (max-width: 1180px) {
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .layout {
     grid-template-columns: 1fr;
   }
@@ -561,7 +845,8 @@ button:disabled {
 
   .header,
   .panel-head,
-  .profile-grid {
+  .profile-grid,
+  .field-grid {
     grid-template-columns: 1fr;
     display: grid;
   }

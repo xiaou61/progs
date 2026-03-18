@@ -11,8 +11,8 @@ const sessionStore = useAdminSessionStore()
 const loading = ref(false)
 const error = ref('')
 const form = reactive({
-  studentNo: 'A20260001',
-  password: 'Abcd1234'
+  studentNo: '',
+  password: ''
 })
 
 const redirectTarget = computed(() => {
@@ -48,7 +48,7 @@ async function submitLogin() {
       userId: result.userId,
       roleCode: 'ADMIN',
       studentNo: form.studentNo.trim(),
-      displayName: form.studentNo.trim() === 'A20260001' ? '系统管理员' : form.studentNo.trim()
+      displayName: form.studentNo.trim()
     })
 
     await router.replace(redirectTarget.value)
@@ -58,12 +58,6 @@ async function submitLogin() {
     loading.value = false
   }
 }
-
-function applyPreset() {
-  form.studentNo = 'A20260001'
-  form.password = 'Abcd1234'
-  error.value = ''
-}
 </script>
 
 <template>
@@ -72,9 +66,8 @@ function applyPreset() {
       <div>
         <p class="eyebrow">Campus Competition</p>
         <h1>后台管理登录</h1>
-        <p>现在这里已经接入真实登录接口，使用管理员演示账号即可进入后台。</p>
+        <p>后台管理端已接入真实认证接口，请使用已开通的管理员账号登录。</p>
       </div>
-      <button class="ghost-button" type="button" @click="applyPreset">填入演示账号</button>
     </section>
 
     <section class="form-card">
@@ -93,8 +86,6 @@ function applyPreset() {
       <button class="primary-button" type="button" :disabled="loading" @click="submitLogin">
         {{ loading ? '登录中...' : '登录进入后台' }}
       </button>
-
-      <p class="tips">演示账号：`A20260001`，演示密码：`Abcd1234`</p>
     </section>
   </main>
 </template>
@@ -130,8 +121,7 @@ function applyPreset() {
 .eyebrow,
 h1,
 .hero-card p:last-child,
-.field span,
-.tips {
+.field span {
   margin: 0;
 }
 
@@ -159,8 +149,7 @@ h1 {
   margin-bottom: 18px;
 }
 
-.field span,
-.tips {
+.field span {
   color: #556678;
   font-size: 14px;
 }
@@ -189,19 +178,9 @@ h1 {
   font-weight: 700;
 }
 
-.ghost-button {
-  align-self: flex-start;
-  background: #eef3f7;
-  color: #314657;
-}
-
 .error-text {
   margin: 0 0 14px;
   color: #b14a2f;
   font-size: 14px;
-}
-
-.tips {
-  margin-top: 14px;
 }
 </style>

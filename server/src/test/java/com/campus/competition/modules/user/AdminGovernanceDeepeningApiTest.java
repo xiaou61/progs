@@ -45,7 +45,29 @@ class AdminGovernanceDeepeningApiTest {
       .andExpect(jsonPath("$.code").value(0))
       .andExpect(jsonPath("$.data.roleCode").value("ADMIN"));
 
+    mockMvc.perform(post("/api/admin/users")
+        .contentType(APPLICATION_JSON)
+        .content("""
+          {
+            "studentNo": "T20260102",
+            "realName": "新建老师",
+            "phone": "13800000102",
+            "roleCode": "TEACHER",
+            "password": "Abcd5678"
+          }
+          """))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.code").value(0))
+      .andExpect(jsonPath("$.data.studentNo").value("T20260102"));
+
     long studentId = findUserIdByStudentNo("S20260001");
+
+    mockMvc.perform(get("/api/admin/logs")
+        .param("action", "USER_CREATE"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.code").value(0))
+      .andExpect(jsonPath("$.data[0].action").value("USER_CREATE"))
+      .andExpect(jsonPath("$.data[0].target").value("T20260102"));
 
     mockMvc.perform(post("/api/admin/users/" + studentId + "/violation")
         .contentType(APPLICATION_JSON)

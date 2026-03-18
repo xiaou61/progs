@@ -1,6 +1,7 @@
 package com.campus.competition.modules.user.service;
 
 import com.campus.competition.modules.auth.model.UserSummary;
+import com.campus.competition.modules.user.model.CreateUserCommand;
 import com.campus.competition.modules.user.model.AssignUserRoleCommand;
 import com.campus.competition.modules.user.model.FreezeUserCommand;
 import com.campus.competition.modules.user.model.ResetPasswordCommand;
@@ -10,6 +11,8 @@ import java.util.List;
 public interface AdminUserService {
 
   List<UserSummary> listUsers();
+
+  UserSummary createUser(CreateUserCommand command);
 
   boolean freeze(Long userId, FreezeUserCommand command);
 

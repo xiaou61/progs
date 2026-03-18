@@ -11,6 +11,14 @@ export type UserItem = {
   violationReason?: string | null
 }
 
+export type CreateUserPayload = {
+  studentNo: string
+  realName: string
+  phone: string
+  roleCode: string
+  password: string
+}
+
 export type OperationLogItem = {
   id: number
   operatorName: string
@@ -28,6 +36,13 @@ export type UserLogQuery = {
 
 export async function fetchUsers(): Promise<UserItem[]> {
   return request<UserItem[]>('/api/admin/users')
+}
+
+export async function createUser(payload: CreateUserPayload): Promise<UserItem> {
+  return request<UserItem>('/api/admin/users', {
+    method: 'POST',
+    body: payload
+  })
 }
 
 export async function freezeUser(userId: number, reason: string) {

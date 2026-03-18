@@ -66,6 +66,37 @@ class AdminUserGovernanceApiTest {
       .andExpect(jsonPath("$.data.roleName").value("赛事评委"))
       .andExpect(jsonPath("$.data.permissionCodes[2]").value("RESULT_VIEW"));
 
+    mockMvc.perform(post("/api/admin/users")
+        .contentType(APPLICATION_JSON)
+        .content("""
+          {
+            "studentNo": "S20260101",
+            "realName": "新建学生",
+            "phone": "13800000101",
+            "roleCode": "STUDENT",
+            "password": "Abcd5678"
+          }
+          """))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.code").value(0))
+      .andExpect(jsonPath("$.data.studentNo").value("S20260101"))
+      .andExpect(jsonPath("$.data.realName").value("新建学生"))
+      .andExpect(jsonPath("$.data.roleCode").value("STUDENT"))
+      .andExpect(jsonPath("$.data.status").value("ENABLED"));
+
+    mockMvc.perform(post("/api/app/auth/login")
+        .contentType(APPLICATION_JSON)
+        .content("""
+          {
+            "studentNo": "S20260101",
+            "password": "Abcd5678",
+            "roleCode": "STUDENT"
+          }
+          """))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.code").value(0))
+      .andExpect(jsonPath("$.data.roleCode").value("STUDENT"));
+
     long studentId = findUserIdByStudentNo("S20260001");
 
     mockMvc.perform(post("/api/admin/users/" + studentId + "/freeze")

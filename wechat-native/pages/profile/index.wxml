@@ -1,8 +1,8 @@
 <view class="page">
-  <view class="hero">
+  <view class="hero profile-hero">
     <text class="eyebrow">Profile Center</text>
     <text class="title">个人中心</text>
-    <text class="desc">这里已经补齐资料、密码、反馈、隐私设置和我的比赛汇总。</text>
+    <text class="desc">管理个人资料、密码和通知设置，账号仍由后台管理员统一开通。</text>
   </view>
 
   <view wx:if="{{loading}}" class="state-card">
@@ -17,21 +17,20 @@
       <text class="success-text">{{success}}</text>
     </view>
 
-    <view class="panel">
-      <text class="section-title">账号概览</text>
-      <text class="list-meta">账号：{{profile.studentNo}}</text>
-      <text class="list-meta">角色：{{profile.roleCode}}</text>
-      <text class="list-meta">状态：{{profile.status}}</text>
-    </view>
+    <view class="panel summary-panel">
+      <view class="meta-row">
+        <view>
+          <text class="section-title">{{profile.realName || '未完善姓名'}}</text>
+          <text class="section-desc">{{profile.studentNo}} · {{profile.roleCode}}</text>
+        </view>
+        <text class="mini-badge">{{profile.status}}</text>
+      </view>
 
-    <view class="panel">
-      <text class="section-title">我的比赛汇总</text>
       <text wx:if="{{overviewLoading}}" class="list-meta">正在加载比赛汇总...</text>
       <text wx:elif="{{overviewError}}" class="error-text">{{overviewError}}</text>
       <view wx:else>
-        <text class="section-desc">{{taskProgress}}</text>
-        <text class="list-meta">签到时间：{{checkinTime}}</text>
-        <text class="list-meta">分享时间：{{shareTime}}</text>
+        <text class="list-meta">今日任务：{{taskProgress}}</text>
+        <text class="list-meta">签到：{{checkinTime}} · 分享：{{shareTime}}</text>
         <view wx:if="{{overviewCards.length > 0}}" class="grid-2 profile-grid">
           <view wx:for="{{overviewCards}}" wx:key="label" class="list-item">
             <text class="list-title">{{item.value}}</text>
@@ -85,34 +84,36 @@
     </view>
 
     <view class="panel">
-      <text class="section-title">提醒与隐私</text>
-      <view class="meta-row switch-item">
-        <text>结果通知</text>
-        <switch checked="{{profile.notifyResult}}" color="#c86c31" data-field="profile.notifyResult" bindchange="updateSwitch" />
+      <text class="section-title">账号设置</text>
+      <view class="switch-group">
+        <view class="meta-row switch-item">
+          <text>结果通知</text>
+          <switch checked="{{profile.notifyResult}}" color="#c86c31" data-field="profile.notifyResult" bindchange="updateSwitch" />
+        </view>
+        <view class="meta-row switch-item">
+          <text>积分通知</text>
+          <switch checked="{{profile.notifyPoints}}" color="#c86c31" data-field="profile.notifyPoints" bindchange="updateSwitch" />
+        </view>
+        <view class="meta-row switch-item">
+          <text>允许私信</text>
+          <switch checked="{{profile.allowPrivateMessage}}" color="#c86c31" data-field="profile.allowPrivateMessage" bindchange="updateSwitch" />
+        </view>
+        <view class="meta-row switch-item">
+          <text>公开我的比赛</text>
+          <switch checked="{{profile.publicCompetition}}" color="#c86c31" data-field="profile.publicCompetition" bindchange="updateSwitch" />
+        </view>
+        <view class="meta-row switch-item">
+          <text>公开我的积分</text>
+          <switch checked="{{profile.publicPoints}}" color="#c86c31" data-field="profile.publicPoints" bindchange="updateSwitch" />
+        </view>
+        <view class="meta-row switch-item">
+          <text>公开我的作品</text>
+          <switch checked="{{profile.publicSubmission}}" color="#c86c31" data-field="profile.publicSubmission" bindchange="updateSwitch" />
+        </view>
       </view>
-      <view class="meta-row switch-item">
-        <text>积分通知</text>
-        <switch checked="{{profile.notifyPoints}}" color="#c86c31" data-field="profile.notifyPoints" bindchange="updateSwitch" />
-      </view>
-      <view class="meta-row switch-item">
-        <text>允许私信</text>
-        <switch checked="{{profile.allowPrivateMessage}}" color="#c86c31" data-field="profile.allowPrivateMessage" bindchange="updateSwitch" />
-      </view>
-      <view class="meta-row switch-item">
-        <text>公开我的比赛</text>
-        <switch checked="{{profile.publicCompetition}}" color="#c86c31" data-field="profile.publicCompetition" bindchange="updateSwitch" />
-      </view>
-      <view class="meta-row switch-item">
-        <text>公开我的积分</text>
-        <switch checked="{{profile.publicPoints}}" color="#c86c31" data-field="profile.publicPoints" bindchange="updateSwitch" />
-      </view>
-      <view class="meta-row switch-item">
-        <text>公开我的作品</text>
-        <switch checked="{{profile.publicSubmission}}" color="#c86c31" data-field="profile.publicSubmission" bindchange="updateSwitch" />
-      </view>
-    </view>
 
-    <view class="panel">
+      <view class="section-divider"></view>
+
       <text class="section-title">修改密码</text>
       <view class="field">
         <text class="label">旧密码</text>

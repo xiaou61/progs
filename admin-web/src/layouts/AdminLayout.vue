@@ -34,6 +34,7 @@ function logout() {
         <p class="eyebrow">Admin Console</p>
         <h1>师生比赛后台</h1>
         <p>左侧导航直达主要治理模块</p>
+        <span class="brand-badge">账号开通 · 赛事治理 · 运营配置</span>
       </div>
 
       <nav class="nav">
@@ -54,9 +55,10 @@ function logout() {
 
     <div class="main-shell">
       <header class="topbar">
-        <div>
+        <div class="topbar-main">
           <p class="topbar-label">当前页面</p>
           <h2>{{ pageTitle }}</h2>
+          <p class="topbar-caption">统一处理账号、比赛、审核与系统配置</p>
         </div>
         <div class="topbar-actions">
           <div class="account-card">
@@ -68,7 +70,9 @@ function logout() {
       </header>
 
       <main class="content">
-        <RouterView />
+        <div class="content-surface">
+          <RouterView />
+        </div>
       </main>
     </div>
   </div>
@@ -93,18 +97,23 @@ function logout() {
 
 .brand {
   margin-bottom: 24px;
-  padding: 18px;
+  padding: 20px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.06);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)),
+    rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .eyebrow,
 .brand h1,
 .brand p,
+.brand-badge,
 .nav-section-title,
 .nav-link,
 .topbar-label,
 .topbar h2,
+.topbar-caption,
 .account-card strong,
 .account-card span {
   margin: 0;
@@ -126,6 +135,16 @@ function logout() {
 .brand p {
   color: rgba(240, 245, 248, 0.7);
   line-height: 1.6;
+}
+
+.brand-badge {
+  display: inline-flex;
+  margin-top: 14px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(247, 191, 139, 0.14);
+  color: #f7d3ad;
+  font-size: 12px;
 }
 
 .nav {
@@ -172,7 +191,12 @@ function logout() {
   justify-content: space-between;
   gap: 20px;
   align-items: center;
-  padding: 24px 28px 12px;
+  padding: 24px 28px 16px;
+}
+
+.topbar-main {
+  display: grid;
+  gap: 6px;
 }
 
 .topbar-label {
@@ -186,6 +210,11 @@ function logout() {
 .topbar h2 {
   color: #173149;
   font-size: 30px;
+}
+
+.topbar-caption {
+  color: #6d8194;
+  font-size: 14px;
 }
 
 .topbar-actions {
@@ -224,6 +253,14 @@ function logout() {
 
 .content {
   min-width: 0;
+  padding: 0 28px 28px;
+}
+
+.content-surface {
+  min-height: calc(100vh - 120px);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 @media (max-width: 1100px) {
@@ -234,6 +271,11 @@ function logout() {
   .sidebar {
     border-right: none;
     border-bottom: 1px solid rgba(50, 72, 92, 0.08);
+  }
+
+  .content {
+    padding-inline: 20px;
+    padding-bottom: 20px;
   }
 }
 </style>

@@ -1,5 +1,45 @@
 .login-page {
-  padding-top: 80rpx;
+  padding-top: 72rpx;
+}
+
+.login-hero {
+  display: grid;
+  gap: 20rpx;
+}
+
+.hero-copy .title {
+  margin-bottom: 18rpx;
+}
+
+.login-tip-card {
+  padding: 24rpx;
+  border-radius: 24rpx;
+  background: rgba(255, 255, 255, 0.48);
+  border: 2rpx solid rgba(255, 255, 255, 0.7);
+}
+
+.tip-title {
+  display: block;
+  margin-bottom: 12rpx;
+  color: #9d6432;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.tip-text {
+  display: block;
+  color: #526171;
+  font-size: 24rpx;
+  line-height: 1.7;
+}
+
+.login-form {
+  margin-top: 8rpx;
+}
+
+.compact-row {
+  margin-top: 0;
+  margin-bottom: 12rpx;
 }
 
 .role-group {
@@ -11,5 +51,20 @@
   display: inline-flex;
   align-items: center;
   gap: 8rpx;
+  padding: 16rpx 20rpx;
+  border-radius: 20rpx;
+  background: #f7f9fb;
   color: #233243;
+}
+
+.role-option.active {
+  background: rgba(240, 223, 207, 0.88);
+}
+
+.login-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 16rpx;
+  align-items: center;
+  margin-top: 8rpx;
 }

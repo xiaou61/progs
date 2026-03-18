@@ -3,6 +3,7 @@ package com.campus.competition.modules.user.controller;
 import com.campus.competition.modules.auth.model.UserSummary;
 import com.campus.competition.modules.common.model.ApiResponse;
 import com.campus.competition.modules.user.model.AssignUserRoleCommand;
+import com.campus.competition.modules.user.model.CreateUserCommand;
 import com.campus.competition.modules.user.model.FreezeUserCommand;
 import com.campus.competition.modules.user.model.ResetPasswordCommand;
 import com.campus.competition.modules.user.model.ViolationGovernanceCommand;
@@ -29,6 +30,11 @@ public class AdminUserController {
   @GetMapping
   public ApiResponse<List<UserSummary>> list() {
     return ApiResponse.success(adminUserService.listUsers());
+  }
+
+  @PostMapping
+  public ApiResponse<UserSummary> create(@RequestBody CreateUserCommand command) {
+    return ApiResponse.success(adminUserService.createUser(command));
   }
 
   @PostMapping("/{userId}/freeze")

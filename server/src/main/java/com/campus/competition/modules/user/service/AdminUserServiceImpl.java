@@ -7,6 +7,7 @@ import com.campus.competition.modules.auth.persistence.UserEntity;
 import com.campus.competition.modules.log.service.AdminLogService;
 import com.campus.competition.modules.role.service.RoleService;
 import com.campus.competition.modules.user.model.AssignUserRoleCommand;
+import com.campus.competition.modules.user.model.CreateUserCommand;
 import com.campus.competition.modules.user.model.FreezeUserCommand;
 import com.campus.competition.modules.user.model.ResetPasswordCommand;
 import com.campus.competition.modules.user.model.ViolationGovernanceCommand;
@@ -37,6 +38,51 @@ public class AdminUserServiceImpl implements AdminUserService {
       .stream()
       .map(this::toSummary)
       .toList();
+  }
+
+  @Override
+  public UserSummary createUser(CreateUserCommand command) {
+    if (command == null) {
+      throw new IllegalArgumentException("创建用户参数不能为空");
+    }
+
+    String studentNo = normalizeRequired(command.studentNo(), "学号不能为空");
+    String realName = normalizeRequired(command.realName(), "姓名不能为空");
+    String phone = normalizeRequired(command.phone(), "手机号不能为空");
+    String password = normalizeRequired(command.password(), "密码不能为空");
+    if (password.length() < 8) {
+      throw new IllegalArgumentException("密码长度不能少于 8 位");
+    }
+
+    String roleCode = roleService.getRequiredRole(command.roleCode()).getRoleCode();
+    Long exists = userMapper.selectCount(Wrappers.<UserEntity>lambdaQuery()
+      .eq(UserEntity::getStudentNo, studentNo));
+    if (exists != null && exists > 0) {
+      throw new IllegalArgumentException("学号已存在");
+    }
+
+    LocalDateTime now = LocalDateTime.now();
+    UserEntity entity = new UserEntity();
+    entity.setStudentNo(studentNo);
+    entity.setRealName(realName);
+    entity.setPhone(phone);
+    entity.setRoleCode(roleCode);
+    entity.setPasswordHash(passwordEncoder.encode(password));
+    entity.setStatus("ENABLED");
+    entity.setViolationMarked(false);
+    entity.setViolationReason(null);
+    entity.setNotifyResult(true);
+    entity.setNotifyPoints(true);
+    entity.setAllowPrivateMessage(true);
+    entity.setPublicCompetition(true);
+    entity.setPublicPoints(true);
+    entity.setPublicSubmission(true);
+    entity.setCreatedAt(now);
+    entity.setUpdatedAt(now);
+    userMapper.insert(entity);
+
+    adminLogService.record("USER_CREATE", entity.getStudentNo(), "创建角色 " + entity.getRoleCode());
+    return toSummary(entity);
   }
 
   @Override
@@ -138,5 +184,13 @@ public class AdminUserServiceImpl implements AdminUserService {
       Boolean.TRUE.equals(user.getViolationMarked()),
       user.getViolationReason()
     );
+  }
+
+  private String normalizeRequired(String value, String errorMessage) {
+    String normalized = value == null ? "" : value.trim();
+    if (normalized.isBlank()) {
+      throw new IllegalArgumentException(errorMessage);
+    }
+    return normalized;
   }
 }

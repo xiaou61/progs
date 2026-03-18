@@ -3,6 +3,7 @@ import { fetchCampuses } from '@/api/campuses'
 import {
   assignUserRole,
   clearUserViolation,
+  createUser,
   fetchUsers,
   fetchUserLogs,
   freezeUser,
@@ -67,6 +68,51 @@ describe('admin api clients', () => {
 
     expect(fetchMock).toHaveBeenCalledWith('/api/admin/campuses', { method: 'GET' })
     expect(campuses[0]?.campusCode).toBe('MAIN')
+  })
+
+  it('should create users through backend api', async () => {
+    const fetchMock = vi.mocked(fetch)
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        code: 0,
+        message: 'ok',
+        data: {
+          id: 6,
+          studentNo: 'S20260101',
+          realName: '新建学生',
+          phone: '13800000101',
+          roleCode: 'STUDENT',
+          status: 'ENABLED',
+          violationMarked: false,
+          violationReason: null
+        }
+      })
+    } as Response)
+
+    const created = await createUser({
+      studentNo: 'S20260101',
+      realName: '新建学生',
+      phone: '13800000101',
+      roleCode: 'STUDENT',
+      password: 'Abcd5678'
+    })
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/admin/users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        studentNo: 'S20260101',
+        realName: '新建学生',
+        phone: '13800000101',
+        roleCode: 'STUDENT',
+        password: 'Abcd5678'
+      })
+    })
+    expect(created.studentNo).toBe('S20260101')
+    expect(created.violationMarked).toBe(false)
   })
 
   it('should create or update campuses through backend api', async () => {
