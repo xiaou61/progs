@@ -1,0 +1,25 @@
+<view class="page">
+  <view class="hero">
+    <text class="eyebrow">Check In</text>
+    <text class="title">现场签到</text>
+    <text class="desc">当前已接入真实签到接口，并可回显当前账号的签到状态。</text>
+  </view>
+
+  <view class="panel">
+    <text class="badge">{{statusLabel}}</text>
+    <text class="section-title">{{competitionTitle}}</text>
+    <text class="section-desc">{{competitionDesc}}</text>
+    <text wx:if="{{checkedAt}}" class="success-text">签到时间：{{checkedAt}}</text>
+    <text wx:if="{{error}}" class="error-text">{{error}}</text>
+
+    <view class="tip-list">
+      <view wx:for="{{tips}}" wx:key="*this" class="list-item">
+        <text>{{item}}</text>
+      </view>
+    </view>
+
+    <button class="primary-btn" loading="{{submitting}}" disabled="{{loading || submitting || !!checkedAt}}" bindtap="submitCheckin">
+      {{checkedAt ? '已完成签到' : (submitting ? '签到中...' : '立即签到')}}
+    </button>
+  </view>
+</view>

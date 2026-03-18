@@ -1,0 +1,16 @@
+.switch-item {
+  margin-bottom: 18rpx;
+}
+
+.competition-item {
+  margin-bottom: 16rpx;
+  padding: 24rpx;
+  border-radius: 20rpx;
+  background: #f7f9fb;
+  border: 2rpx solid #e2e8ef;
+}
+
+.competition-item-active {
+  border-color: #c86c31;
+  box-shadow: 0 12rpx 28rpx rgba(200, 108, 49, 0.12);
+}

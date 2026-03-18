@@ -1,0 +1,25 @@
+.menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.menu-card {
+  padding: 24rpx;
+  border-radius: 20rpx;
+  background: #f7f9fb;
+}
+
+.menu-title {
+  display: block;
+  margin-bottom: 8rpx;
+  color: #1d2a3a;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.menu-meta {
+  display: block;
+  color: #6c7a89;
+  font-size: 24rpx;
+}

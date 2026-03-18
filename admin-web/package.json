@@ -1,0 +1,25 @@
+{
+  "name": "admin-web",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "pinia": "^3.0.3",
+    "vue": "^3.5.30",
+    "vue-router": "^4.5.1"
+  },
+  "devDependencies": {
+    "@vue/compiler-sfc": "^3.5.30",
+    "@types/node": "^24.5.2",
+    "@vitejs/plugin-vue": "^6.0.5",
+    "jsdom": "^26.1.0",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.7",
+    "vitest": "^4.1.0"
+  }
+}

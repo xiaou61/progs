@@ -1,0 +1,161 @@
+<view class="page">
+  <view class="hero">
+    <text class="eyebrow">Profile Center</text>
+    <text class="title">个人中心</text>
+    <text class="desc">这里已经补齐资料、密码、反馈、隐私设置和我的比赛汇总。</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="state-card">
+    <text>正在加载个人资料...</text>
+  </view>
+
+  <view wx:else>
+    <view wx:if="{{error}}" class="state-card">
+      <text class="error-text">{{error}}</text>
+    </view>
+    <view wx:if="{{success}}" class="state-card">
+      <text class="success-text">{{success}}</text>
+    </view>
+
+    <view class="panel">
+      <text class="section-title">账号概览</text>
+      <text class="list-meta">账号：{{profile.studentNo}}</text>
+      <text class="list-meta">角色：{{profile.roleCode}}</text>
+      <text class="list-meta">状态：{{profile.status}}</text>
+    </view>
+
+    <view class="panel">
+      <text class="section-title">我的比赛汇总</text>
+      <text wx:if="{{overviewLoading}}" class="list-meta">正在加载比赛汇总...</text>
+      <text wx:elif="{{overviewError}}" class="error-text">{{overviewError}}</text>
+      <view wx:else>
+        <text class="section-desc">{{taskProgress}}</text>
+        <text class="list-meta">签到时间：{{checkinTime}}</text>
+        <text class="list-meta">分享时间：{{shareTime}}</text>
+        <view wx:if="{{overviewCards.length > 0}}" class="grid-2 profile-grid">
+          <view wx:for="{{overviewCards}}" wx:key="label" class="list-item">
+            <text class="list-title">{{item.value}}</text>
+            <text class="list-meta">{{item.label}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="panel">
+      <text class="section-title">基础资料</text>
+      <view class="field">
+        <text class="label">姓名</text>
+        <input class="input" value="{{profile.realName}}" data-field="profile.realName" placeholder="请输入姓名" bindinput="updateField" />
+      </view>
+      <view class="field">
+        <text class="label">手机号</text>
+        <input class="input" value="{{profile.phone}}" data-field="profile.phone" placeholder="请输入手机号" bindinput="updateField" />
+      </view>
+      <view class="field">
+        <text class="label">头像地址</text>
+        <input class="input" value="{{profile.avatarUrl}}" data-field="profile.avatarUrl" placeholder="可选，填写头像 URL" bindinput="updateField" />
+      </view>
+      <view class="field-row">
+        <view class="field field-half">
+          <text class="label">校区</text>
+          <input class="input" value="{{profile.campusName}}" data-field="profile.campusName" placeholder="如：主校区" bindinput="updateField" />
+        </view>
+        <view class="field field-half">
+          <text class="label">年级</text>
+          <input class="input" value="{{profile.gradeName}}" data-field="profile.gradeName" placeholder="如：2026级" bindinput="updateField" />
+        </view>
+      </view>
+      <view class="field-row">
+        <view class="field field-half">
+          <text class="label">专业</text>
+          <input class="input" value="{{profile.majorName}}" data-field="profile.majorName" placeholder="如：软件工程" bindinput="updateField" />
+        </view>
+        <view class="field field-half">
+          <text class="label">院系</text>
+          <input class="input" value="{{profile.departmentName}}" data-field="profile.departmentName" placeholder="如：信息工程学院" bindinput="updateField" />
+        </view>
+      </view>
+      <view class="field">
+        <text class="label">个人简介</text>
+        <textarea class="textarea" value="{{profile.bio}}" maxlength="120" data-field="profile.bio" placeholder="介绍一下你的比赛方向、擅长领域或个人标签" bindinput="updateField" />
+      </view>
+      <button class="primary-btn" loading="{{saving}}" disabled="{{saving}}" bindtap="saveProfile">
+        {{saving ? '保存中...' : '保存资料'}}
+      </button>
+    </view>
+
+    <view class="panel">
+      <text class="section-title">提醒与隐私</text>
+      <view class="meta-row switch-item">
+        <text>结果通知</text>
+        <switch checked="{{profile.notifyResult}}" color="#c86c31" data-field="profile.notifyResult" bindchange="updateSwitch" />
+      </view>
+      <view class="meta-row switch-item">
+        <text>积分通知</text>
+        <switch checked="{{profile.notifyPoints}}" color="#c86c31" data-field="profile.notifyPoints" bindchange="updateSwitch" />
+      </view>
+      <view class="meta-row switch-item">
+        <text>允许私信</text>
+        <switch checked="{{profile.allowPrivateMessage}}" color="#c86c31" data-field="profile.allowPrivateMessage" bindchange="updateSwitch" />
+      </view>
+      <view class="meta-row switch-item">
+        <text>公开我的比赛</text>
+        <switch checked="{{profile.publicCompetition}}" color="#c86c31" data-field="profile.publicCompetition" bindchange="updateSwitch" />
+      </view>
+      <view class="meta-row switch-item">
+        <text>公开我的积分</text>
+        <switch checked="{{profile.publicPoints}}" color="#c86c31" data-field="profile.publicPoints" bindchange="updateSwitch" />
+      </view>
+      <view class="meta-row switch-item">
+        <text>公开我的作品</text>
+        <switch checked="{{profile.publicSubmission}}" color="#c86c31" data-field="profile.publicSubmission" bindchange="updateSwitch" />
+      </view>
+    </view>
+
+    <view class="panel">
+      <text class="section-title">修改密码</text>
+      <view class="field">
+        <text class="label">旧密码</text>
+        <input class="input" value="{{passwordForm.oldPassword}}" data-field="passwordForm.oldPassword" password placeholder="请输入旧密码" bindinput="updateField" />
+      </view>
+      <view class="field">
+        <text class="label">新密码</text>
+        <input class="input" value="{{passwordForm.newPassword}}" data-field="passwordForm.newPassword" password placeholder="不少于 8 位" bindinput="updateField" />
+      </view>
+      <view class="field">
+        <text class="label">确认新密码</text>
+        <input class="input" value="{{passwordForm.confirmPassword}}" data-field="passwordForm.confirmPassword" password placeholder="再次输入新密码" bindinput="updateField" />
+      </view>
+      <button class="secondary-btn" loading="{{passwordSaving}}" disabled="{{passwordSaving}}" bindtap="savePassword">
+        {{passwordSaving ? '提交中...' : '确认修改密码'}}
+      </button>
+    </view>
+
+    <view class="panel">
+      <text class="section-title">意见反馈</text>
+      <view class="field">
+        <text class="label">反馈内容</text>
+        <textarea class="textarea" value="{{feedbackForm.content}}" maxlength="300" data-field="feedbackForm.content" placeholder="告诉我们你在使用中遇到的问题或建议" bindinput="updateField" />
+      </view>
+      <view class="field">
+        <text class="label">图片地址</text>
+        <textarea class="textarea feedback-textarea" value="{{feedbackForm.imageUrls}}" data-field="feedbackForm.imageUrls" placeholder="可选，每行一个图片 URL" bindinput="updateField" />
+      </view>
+      <button class="secondary-btn" loading="{{feedbackSaving}}" disabled="{{feedbackSaving}}" bindtap="saveFeedback">
+        {{feedbackSaving ? '提交中...' : '提交反馈'}}
+      </button>
+    </view>
+
+    <view class="panel danger-panel">
+      <text class="section-title">账号注销</text>
+      <text class="section-desc">输入“确认注销”后，当前账号将被停用，后续无法继续登录。</text>
+      <view class="field">
+        <text class="label">确认语</text>
+        <input class="input danger-input" value="{{cancelForm.confirmText}}" data-field="cancelForm.confirmText" placeholder="请输入 确认注销" bindinput="updateField" />
+      </view>
+      <button class="danger-btn" loading="{{cancelSaving}}" disabled="{{cancelSaving}}" bindtap="handleCancelAccount">
+        {{cancelSaving ? '处理中...' : '确认注销账号'}}
+      </button>
+    </view>
+  </view>
+</view>

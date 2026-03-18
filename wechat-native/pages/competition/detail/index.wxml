@@ -1,0 +1,59 @@
+<view class="page">
+  <view class="hero">
+    <text class="eyebrow">Competition</text>
+    <text class="title">比赛详情</text>
+    <text class="desc">这里串起报名、签到、作品上传、结果查看和咨询老师几个关键入口。</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="state-card">
+    <text>正在加载比赛详情...</text>
+  </view>
+
+  <view wx:elif="{{error}}" class="state-card">
+    <text class="error-text">{{error}}</text>
+  </view>
+
+  <view wx:elif="{{detail}}" class="panel">
+    <text class="badge">{{statusLabel}}</text>
+    <text class="section-title">{{detail.title}}</text>
+    <text class="section-desc">{{detail.description}}</text>
+
+    <view class="meta-card">
+      <text class="list-meta">报名时间</text>
+      <text>{{signupWindow}}</text>
+    </view>
+    <view class="meta-card">
+      <text class="list-meta">比赛时间</text>
+      <text>{{competitionWindow}}</text>
+    </view>
+    <view class="meta-card">
+      <text class="list-meta">比赛名额</text>
+      <text>{{detail.quota}} 人</text>
+    </view>
+
+    <view class="button-row">
+      <button wx:for="{{actionButtons}}" wx:key="key" class="primary-btn" data-target="{{item.key}}" bindtap="openAction">
+        {{item.label}}
+      </button>
+    </view>
+
+    <view class="panel muted-card">
+      <text class="section-title">日常任务</text>
+      <text class="section-desc">分享当前比赛可领取当日分享积分，每日限 1 次。</text>
+      <text wx:if="{{shareError}}" class="error-text">{{shareError}}</text>
+      <text wx:if="{{shareMessage}}" class="success-text">{{shareMessage}}</text>
+      <button class="secondary-btn" loading="{{shareLoading}}" disabled="{{shareLoading}}" bindtap="handleShareTask">
+        {{shareLoading ? '领取中...' : '分享比赛得积分'}}
+      </button>
+    </view>
+
+    <view class="panel muted-card">
+      <text class="section-title">比赛咨询</text>
+      <text class="section-desc">对报名要求或赛程安排有疑问时，可直接联系比赛发起人。</text>
+      <text wx:if="{{consultError}}" class="error-text">{{consultError}}</text>
+      <button class="secondary-btn" loading="{{consultLoading}}" disabled="{{consultLoading}}" bindtap="handleConsultTeacher">
+        {{consultLoading ? '咨询中...' : '咨询发起人'}}
+      </button>
+    </view>
+  </view>
+</view>

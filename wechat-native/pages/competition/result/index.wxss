@@ -1,0 +1,12 @@
+.result-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.certificate-card {
+  margin: 12rpx 0;
+  padding: 20rpx;
+  border-radius: 18rpx;
+  background: linear-gradient(135deg, #fff7e8 0%, #f6ead5 100%);
+}

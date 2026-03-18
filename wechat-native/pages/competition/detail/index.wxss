@@ -1,0 +1,6 @@
+.meta-card {
+  margin-bottom: 16rpx;
+  padding: 20rpx;
+  border-radius: 18rpx;
+  background: #f7f9fb;
+}

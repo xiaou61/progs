@@ -1,0 +1,27 @@
+.conversation-card {
+  margin-bottom: 16rpx;
+  padding: 22rpx;
+  border-radius: 20rpx;
+  background: #f7f9fb;
+}
+
+.conversation-main {
+  margin-bottom: 12rpx;
+}
+
+.badge-row {
+  display: flex;
+  gap: 12rpx;
+  flex-wrap: wrap;
+  margin-bottom: 8rpx;
+}
+
+.unread-badge {
+  min-width: 40rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+  background: #c86c31;
+  color: #fff7f2;
+  font-size: 22rpx;
+  text-align: center;
+}

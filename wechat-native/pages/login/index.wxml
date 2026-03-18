@@ -1,0 +1,44 @@
+<view class="page login-page">
+  <view class="hero">
+    <text class="eyebrow">Campus Competition</text>
+    <text class="title">原生小程序登录</text>
+    <text class="desc">当前已经切到原生微信小程序结构，可直接使用老师或学生演示账号进入。</text>
+  </view>
+
+  <view class="panel">
+    <view class="button-row">
+      <button class="secondary-btn pill-button" data-role="STUDENT" bindtap="applyPreset">学生演示账号</button>
+      <button class="secondary-btn pill-button" data-role="TEACHER" bindtap="applyPreset">老师演示账号</button>
+    </view>
+
+    <view class="field">
+      <text class="label">身份</text>
+      <radio-group class="role-group" bindchange="changeRole">
+        <label class="role-option">
+          <radio value="STUDENT" checked="{{roleCode === 'STUDENT'}}" color="#c86c31" />
+          <text>学生</text>
+        </label>
+        <label class="role-option">
+          <radio value="TEACHER" checked="{{roleCode === 'TEACHER'}}" color="#c86c31" />
+          <text>老师</text>
+        </label>
+      </radio-group>
+    </view>
+
+    <view class="field">
+      <text class="label">学号</text>
+      <input class="input" value="{{studentNo}}" data-field="studentNo" placeholder="请输入学号" bindinput="updateField" />
+    </view>
+
+    <view class="field">
+      <text class="label">密码</text>
+      <input class="input" value="{{password}}" data-field="password" password placeholder="请输入密码" bindinput="updateField" />
+    </view>
+
+    <text wx:if="{{error}}" class="error-text">{{error}}</text>
+
+    <button class="primary-btn" loading="{{loading}}" disabled="{{loading}}" bindtap="submitLogin">
+      {{loading ? '登录中...' : '登录进入系统'}}
+    </button>
+  </view>
+</view>

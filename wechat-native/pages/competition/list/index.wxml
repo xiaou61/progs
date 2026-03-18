@@ -1,0 +1,29 @@
+<view class="page">
+  <view class="hero">
+    <text class="eyebrow">Competition</text>
+    <text class="title">比赛列表</text>
+    <text class="desc">这里展示可参与的比赛，以及当前的报名状态和时间窗口。</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="state-card">
+    <text>正在加载比赛数据...</text>
+  </view>
+
+  <view wx:elif="{{error}}" class="state-card">
+    <text class="error-text">{{error}}</text>
+  </view>
+
+  <view wx:elif="{{competitions.length === 0}}" class="state-card">
+    <text>当前还没有可展示的比赛。</text>
+  </view>
+
+  <view wx:else class="list">
+    <view wx:for="{{competitions}}" wx:key="id" class="panel" data-id="{{item.id}}" bindtap="openCompetitionDetail">
+      <text class="section-title">{{item.title}}</text>
+      <text class="section-desc">{{item.description}}</text>
+      <text class="list-meta">{{item.statusLabel}} · 名额 {{item.quota}}</text>
+      <text class="list-meta">报名时间：{{item.signupWindow}}</text>
+      <text class="list-meta action-text">查看详情并继续操作</text>
+    </view>
+  </view>
+</view>

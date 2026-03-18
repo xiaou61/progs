@@ -1,0 +1,28 @@
+<view class="page">
+  <view class="hero">
+    <text class="eyebrow">{{chatType === 'PRIVATE' ? 'Private Chat' : 'Competition Group'}}</text>
+    <text class="title">{{title}}</text>
+  </view>
+
+  <view class="panel message-panel">
+    <text wx:if="{{loading}}" class="list-meta">正在加载会话消息...</text>
+    <text wx:elif="{{error}}" class="error-text">{{error}}</text>
+    <view wx:elif="{{messages.length === 0}}" class="list-item">
+      <text>当前还没有消息，发送第一条吧。</text>
+    </view>
+    <view wx:else class="message-list">
+      <view wx:for="{{messages}}" wx:key="id" class="{{item.mine ? 'bubble bubble-self' : 'bubble bubble-peer'}}">
+        <text class="bubble-name">{{item.senderName}}</text>
+        <text class="bubble-content">{{item.content}}</text>
+        <text class="bubble-time">{{item.createdAt}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="panel">
+    <textarea class="textarea" value="{{draft}}" maxlength="300" placeholder="输入消息内容" bindinput="updateDraft" />
+    <button class="primary-btn" loading="{{sending}}" disabled="{{sending || !draft}}" bindtap="handleSend">
+      {{sending ? '发送中...' : '发送消息'}}
+    </button>
+  </view>
+</view>

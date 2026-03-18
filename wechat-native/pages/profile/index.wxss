@@ -1,0 +1,19 @@
+.profile-grid {
+  margin-top: 16rpx;
+}
+
+.switch-item {
+  margin-bottom: 18rpx;
+}
+
+.feedback-textarea {
+  min-height: 120rpx;
+}
+
+.danger-panel {
+  border: 2rpx solid rgba(177, 74, 47, 0.18);
+}
+
+.danger-input {
+  background: #fdf4f1;
+}

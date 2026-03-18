@@ -1,0 +1,62 @@
+<view class="page">
+  <view class="hero">
+    <text class="eyebrow">Message Center</text>
+    <text class="title">消息中心</text>
+    <text class="desc">查看系统通知、私信会话和比赛群聊，也可以直接管理会话状态。</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="state-card">
+    <text>正在加载消息...</text>
+  </view>
+
+  <view wx:elif="{{error}}" class="state-card">
+    <text class="error-text">{{error}}</text>
+  </view>
+
+  <view wx:else>
+    <view class="panel">
+      <text class="section-title">系统消息</text>
+      <view wx:if="{{systemMessages.length === 0}}" class="list-item">
+        <text>当前还没有系统通知。</text>
+      </view>
+      <view wx:for="{{systemMessages}}" wx:key="id" class="list-item">
+        <text class="list-title">{{item.title}}</text>
+        <text class="list-meta">{{item.content}}</text>
+        <text class="list-meta">{{item.createdAt}}</text>
+      </view>
+    </view>
+
+    <view class="panel">
+      <text class="section-title">会话列表</text>
+      <view wx:if="{{conversations.length === 0}}" class="list-item">
+        <text>还没有私信或群聊消息。</text>
+      </view>
+      <view wx:for="{{conversations}}" wx:key="id" class="conversation-card">
+        <view class="conversation-main" data-id="{{item.id}}" bindtap="openConversation">
+          <view class="meta-row">
+            <text class="list-title">{{item.title}}</text>
+            <text wx:if="{{item.unreadCount > 0}}" class="unread-badge">{{item.unreadCount}}</text>
+          </view>
+          <view wx:if="{{item.badges.length > 0}}" class="badge-row">
+            <text wx:for="{{item.badges}}" wx:key="*this" class="tag">{{item}}</text>
+          </view>
+          <text class="list-meta">{{item.typeLabel}}</text>
+          <text class="list-meta">{{item.preview}}</text>
+          <text class="list-meta">{{item.lastMessageAt}}</text>
+        </view>
+
+        <view class="button-row">
+          <button class="secondary-btn pill-button" size="mini" data-id="{{item.id}}" disabled="{{!!actionKey}}" bindtap="handlePin">
+            {{item.pinned ? '取消置顶' : '置顶'}}
+          </button>
+          <button class="secondary-btn pill-button" size="mini" data-id="{{item.id}}" disabled="{{!!actionKey}}" bindtap="handleMute">
+            {{item.muted ? '恢复提醒' : '免打扰'}}
+          </button>
+          <button class="danger-btn pill-button" size="mini" data-id="{{item.id}}" disabled="{{!!actionKey}}" bindtap="handleClear">
+            清空会话
+          </button>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

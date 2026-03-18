@@ -1,0 +1,43 @@
+.message-panel {
+  min-height: 720rpx;
+}
+
+.message-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  max-width: 86%;
+  padding: 20rpx;
+  border-radius: 20rpx;
+}
+
+.bubble-self {
+  align-self: flex-end;
+  background: #f1dfcf;
+}
+
+.bubble-peer {
+  align-self: flex-start;
+  background: #f7f9fb;
+}
+
+.bubble-name {
+  color: #8c5b30;
+  font-size: 22rpx;
+}
+
+.bubble-content {
+  color: #233243;
+  line-height: 1.6;
+}
+
+.bubble-time {
+  color: #6b7a8d;
+  font-size: 24rpx;
+}

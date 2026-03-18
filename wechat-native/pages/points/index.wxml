@@ -1,0 +1,48 @@
+<view class="page">
+  <view class="hero">
+    <text class="eyebrow">Points</text>
+    <text class="title">我的积分</text>
+    <text class="desc">当前已接入真实积分账户与流水接口，后续可继续扩展商城兑换等功能。</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="state-card">
+    <text>正在加载积分数据...</text>
+  </view>
+
+  <view wx:elif="{{error}}" class="state-card">
+    <text class="error-text">{{error}}</text>
+  </view>
+
+  <view wx:else>
+    <view class="panel">
+      <text class="section-title">积分账户</text>
+      <text class="points-value">{{account.availablePoints}}</text>
+      <text class="list-meta">累计积分 {{account.totalPoints}}</text>
+    </view>
+
+    <view class="panel">
+      <text class="section-title">今日任务</text>
+      <text class="section-desc">{{taskProgress}}</text>
+      <text class="list-meta">签到时间：{{checkinTime}}</text>
+      <text class="list-meta">分享时间：{{shareTime}}</text>
+      <view wx:if="{{overviewCards.length > 0}}" class="grid-2 points-grid">
+        <view wx:for="{{overviewCards}}" wx:key="label" class="list-item">
+          <text class="list-title">{{item.value}}</text>
+          <text class="list-meta">{{item.label}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="panel">
+      <text class="section-title">积分流水</text>
+      <view wx:if="{{recordCards.length === 0}}" class="list-item">
+        <text>当前还没有积分流水。</text>
+      </view>
+      <view wx:for="{{recordCards}}" wx:key="id" class="list-item">
+        <text class="list-title">{{item.title}}</text>
+        <text class="list-meta">{{item.time}}</text>
+        <text class="points-amount">{{item.amount}}</text>
+      </view>
+    </view>
+  </view>
+</view>

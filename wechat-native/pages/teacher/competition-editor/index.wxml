@@ -1,0 +1,88 @@
+<view class="page">
+  <view class="hero">
+    <text class="eyebrow">Teacher Manage</text>
+    <text class="title">发布与管理比赛</text>
+    <text class="desc">这里支持保存草稿、编辑、推荐置顶和下架。时间请按 YYYY-MM-DDTHH:mm:ss 填写。</text>
+  </view>
+
+  <view class="panel">
+    <view class="meta-row">
+      <text class="section-title">比赛表单</text>
+      <button class="ghost-button pill-button" size="mini" bindtap="resetForm">重置为新建</button>
+    </view>
+
+    <view class="field">
+      <text class="label">比赛名称</text>
+      <input class="input" value="{{form.title}}" data-field="form.title" placeholder="请输入比赛名称" bindinput="updateField" />
+    </view>
+    <view class="field">
+      <text class="label">比赛说明</text>
+      <textarea class="textarea" value="{{form.description}}" data-field="form.description" placeholder="请输入比赛说明" bindinput="updateField" />
+    </view>
+    <view class="field">
+      <text class="label">报名开始</text>
+      <input class="input" value="{{form.signupStartAt}}" data-field="form.signupStartAt" placeholder="例如 2026-03-18T09:00:00" bindinput="updateField" />
+    </view>
+    <view class="field">
+      <text class="label">报名截止</text>
+      <input class="input" value="{{form.signupEndAt}}" data-field="form.signupEndAt" placeholder="例如 2026-03-20T18:30:00" bindinput="updateField" />
+    </view>
+    <view class="field">
+      <text class="label">比赛开始</text>
+      <input class="input" value="{{form.startAt}}" data-field="form.startAt" placeholder="例如 2026-03-21T09:00:00" bindinput="updateField" />
+    </view>
+    <view class="field">
+      <text class="label">比赛结束</text>
+      <input class="input" value="{{form.endAt}}" data-field="form.endAt" placeholder="例如 2026-03-22T18:30:00" bindinput="updateField" />
+    </view>
+    <view class="field">
+      <text class="label">比赛名额</text>
+      <input class="input" value="{{form.quota}}" data-field="form.quota" type="number" placeholder="请输入比赛名额" bindinput="updateField" />
+    </view>
+
+    <view class="meta-row switch-item">
+      <text>推荐展示</text>
+      <switch checked="{{featureForm.recommended}}" color="#c86c31" data-field="featureForm.recommended" bindchange="updateSwitch" />
+    </view>
+    <view class="meta-row switch-item">
+      <text>置顶展示</text>
+      <switch checked="{{featureForm.pinned}}" color="#c86c31" data-field="featureForm.pinned" bindchange="updateSwitch" />
+    </view>
+
+    <text wx:if="{{error}}" class="error-text">{{error}}</text>
+    <text wx:if="{{success}}" class="success-text">{{success}}</text>
+
+    <view class="button-row">
+      <button class="secondary-btn" loading="{{loading}}" disabled="{{loading}}" bindtap="submitDraft">保存草稿</button>
+      <button class="primary-btn" loading="{{loading}}" disabled="{{loading}}" bindtap="submitPublish">
+        {{selectedCompetitionId ? '更新比赛' : '发布比赛'}}
+      </button>
+    </view>
+
+    <view class="button-row">
+      <button class="secondary-btn" loading="{{featureLoading}}" disabled="{{featureLoading || !selectedCompetitionId}}" bindtap="submitFeature">
+        保存推荐/置顶
+      </button>
+      <button class="danger-btn" loading="{{featureLoading}}" disabled="{{featureLoading || !selectedCompetitionId}}" bindtap="submitOffline">
+        下架比赛
+      </button>
+    </view>
+  </view>
+
+  <view class="panel">
+    <text class="section-title">我的比赛列表</text>
+    <view wx:if="{{listLoading}}" class="list-item">
+      <text>正在加载比赛列表...</text>
+    </view>
+    <view wx:elif="{{myCompetitions.length === 0}}" class="list-item">
+      <text>当前还没有比赛，先创建一个吧。</text>
+    </view>
+    <view wx:else>
+      <view wx:for="{{myCompetitions}}" wx:key="id" class="competition-item {{selectedCompetitionId === item.id ? 'competition-item-active' : ''}}" data-id="{{item.id}}" bindtap="applyCompetitionById">
+        <text class="list-title">{{item.title}}</text>
+        <text class="list-meta">状态：{{item.status}} · 名额：{{item.quota}}</text>
+        <text class="list-meta">推荐：{{item.recommended ? '是' : '否'}} · 置顶：{{item.pinned ? '是' : '否'}}</text>
+      </view>
+    </view>
+  </view>
+</view>

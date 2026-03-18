@@ -1,0 +1,40 @@
+<view class="page">
+  <view class="hero">
+    <text class="eyebrow">Submission</text>
+    <text class="title">作品上传</text>
+    <text class="desc">当前已接入真实作品提交接口，并可回显当前账号的版本记录。</text>
+  </view>
+
+  <view class="panel">
+    <text class="section-title">{{competitionTitle}}</text>
+    <text class="section-desc">{{competitionDesc}}</text>
+
+    <view class="field">
+      <text class="label">作品地址</text>
+      <input class="input" value="{{fileUrl}}" data-field="fileUrl" placeholder="请输入作品文件 URL" bindinput="updateField" />
+    </view>
+
+    <view class="meta-row field">
+      <text class="label">允许覆盖已提交版本</text>
+      <switch checked="{{reuploadAllowed}}" color="#c86c31" data-field="reuploadAllowed" bindchange="updateField" />
+    </view>
+
+    <text wx:if="{{error}}" class="error-text">{{error}}</text>
+    <text wx:if="{{success}}" class="success-text">{{success}}</text>
+
+    <view class="version-list">
+      <view wx:if="{{!loading && versionCards.length === 0}}" class="list-item">
+        <text>当前还没有提交记录，上传后会显示在这里。</text>
+      </view>
+      <view wx:for="{{versionCards}}" wx:key="id" class="list-item">
+        <text class="list-title">{{item.label}} · {{item.status}}</text>
+        <text class="list-meta">{{item.fileName}}</text>
+        <text class="list-meta">{{item.submittedAt}}</text>
+      </view>
+    </view>
+
+    <button class="primary-btn" loading="{{submitting}}" disabled="{{loading || submitting}}" bindtap="submitWork">
+      {{submitting ? '提交中...' : '上传新版本'}}
+    </button>
+  </view>
+</view>

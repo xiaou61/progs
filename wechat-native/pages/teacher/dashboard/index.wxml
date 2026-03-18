@@ -1,0 +1,57 @@
+<view class="page">
+  <view class="hero">
+    <text class="eyebrow">Teacher Dashboard</text>
+    <text class="title">老师赛事看板</text>
+    <text class="desc">在这里可以快速查看自己发起比赛的报名、作品和获奖情况。</text>
+  </view>
+
+  <view class="button-row">
+    <button class="primary-btn" loading="{{loading}}" disabled="{{loading}}" bindtap="loadDashboard">
+      {{loading ? '刷新中...' : '刷新数据'}}
+    </button>
+    <button class="secondary-btn" disabled="{{loading}}" bindtap="copyCsv">复制 CSV</button>
+  </view>
+
+  <text wx:if="{{errorMessage}}" class="error-text">{{errorMessage}}</text>
+  <text wx:if="{{successMessage}}" class="success-text">{{successMessage}}</text>
+
+  <view wx:if="{{overviewCards.length > 0}}" class="panel">
+    <text class="section-title">核心指标</text>
+    <view class="grid-2">
+      <view wx:for="{{overviewCards}}" wx:key="label" class="list-item">
+        <text class="list-title">{{item.value}}</text>
+        <text class="list-meta">{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{summary && summary.statusDistribution.length > 0}}" class="panel">
+    <text class="section-title">比赛状态分布</text>
+    <view class="grid-2">
+      <view wx:for="{{summary.statusDistribution}}" wx:key="status" class="list-item">
+        <text class="list-title">{{item.count}}</text>
+        <text class="list-meta">{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="panel">
+    <text class="section-title">比赛列表</text>
+    <view wx:if="{{loading}}" class="list-item">
+      <text>正在加载老师比赛数据...</text>
+    </view>
+    <view wx:elif="{{!summary || summary.competitions.length === 0}}" class="list-item">
+      <text>当前还没有可展示的比赛数据。</text>
+    </view>
+    <view wx:else>
+      <view wx:for="{{summary.competitions}}" wx:key="competitionId" class="list-item">
+        <view class="meta-row">
+          <text class="list-title">{{item.title}}</text>
+          <text class="tag">{{item.status}}</text>
+        </view>
+        <text class="list-meta">报名 {{item.registrationCount}} · 作品 {{item.submissionCount}}</text>
+        <text class="list-meta">获奖 {{item.awardCount}} · 积分 {{item.awardPoints}}</text>
+      </view>
+    </view>
+  </view>
+</view>

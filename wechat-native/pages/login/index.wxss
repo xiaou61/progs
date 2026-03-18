@@ -1,0 +1,15 @@
+.login-page {
+  padding-top: 80rpx;
+}
+
+.role-group {
+  display: flex;
+  gap: 24rpx;
+}
+
+.role-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  color: #233243;
+}

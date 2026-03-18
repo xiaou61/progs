@@ -1,0 +1,49 @@
+<view class="page">
+  <view class="hero">
+    <text class="eyebrow">Competition</text>
+    <text class="title">比赛报名</text>
+    <text class="desc">当前支持真实报名、报名状态查询，以及学生侧取消报名。</text>
+  </view>
+
+  <view class="panel">
+    <view wx:if="{{loading}}" class="state-card">
+      <text>正在加载比赛信息...</text>
+    </view>
+
+    <view wx:else class="list-item">
+      <text class="list-title">{{competitionTitle}}</text>
+      <text class="list-meta">{{competitionDesc}}</text>
+    </view>
+
+    <view class="field compact-field">
+      <text class="label">比赛编号</text>
+      <text class="list-meta">{{competitionId}}</text>
+    </view>
+
+    <view class="field">
+      <text class="label">当前账号</text>
+      <text class="list-meta">用户 #{{userId}} · {{roleCode === 'TEACHER' ? '老师账号' : '学生账号'}}</text>
+    </view>
+
+    <view class="field">
+      <text class="label">当前状态</text>
+      <text class="list-meta">报名：{{statusText}} · 到场：{{attendanceText}}</text>
+    </view>
+
+    <view wx:if="{{registration}}" class="field">
+      <text class="label">报名记录</text>
+      <text class="list-meta">记录 #{{registration.id}}{{registration.remark ? (' · 备注：' + registration.remark) : ''}}</text>
+    </view>
+
+    <text wx:if="{{error}}" class="error-text">{{error}}</text>
+    <text wx:if="{{success}}" class="success-text">{{success}}</text>
+
+    <button class="primary-btn" loading="{{submitting}}" disabled="{{submitting || hasActiveRegistration}}" bindtap="submitRegistration">
+      {{hasActiveRegistration ? '当前已报名' : (submitting ? '提交中...' : (registration ? '重新报名' : '提交报名'))}}
+    </button>
+
+    <button wx:if="{{hasActiveRegistration}}" class="danger-btn" loading="{{submitting}}" disabled="{{submitting}}" bindtap="submitCancel">
+      {{submitting ? '处理中...' : '取消报名'}}
+    </button>
+  </view>
+</view>

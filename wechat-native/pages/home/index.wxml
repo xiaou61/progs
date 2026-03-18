@@ -1,0 +1,43 @@
+<view class="page">
+  <view class="hero">
+    <text class="eyebrow">Mini Program</text>
+    <text class="title">首页</text>
+    <text class="desc">当前角色：{{roleCode}}，账号：用户 #{{userId}}</text>
+  </view>
+
+  <view class="panel">
+    <view class="meta-row">
+      <text class="section-title">今日任务</text>
+      <button class="ghost-button pill-button" size="mini" bindtap="logout">退出登录</button>
+    </view>
+    <text class="section-desc">{{taskProgress}}</text>
+    <text wx:if="{{error}}" class="error-text">{{error}}</text>
+    <text wx:if="{{success}}" class="success-text">{{success}}</text>
+    <view class="button-row">
+      <button class="primary-btn pill-button" loading="{{loading}}" disabled="{{loading}}" bindtap="handleDailyCheckin">
+        {{loading ? '处理中...' : checkinLabel}}
+      </button>
+      <button class="secondary-btn pill-button" bindtap="openCompetitionList">{{shareLabel}}</button>
+    </view>
+  </view>
+
+  <view wx:if="{{overviewCards.length > 0}}" class="panel">
+    <text class="section-title">个人比赛汇总</text>
+    <view class="grid-2">
+      <view wx:for="{{overviewCards}}" wx:key="label" class="list-item">
+        <text class="list-title">{{item.value}}</text>
+        <text class="list-meta">{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="panel">
+    <text class="section-title">功能入口</text>
+    <view class="menu-list">
+      <view wx:for="{{menuCards}}" wx:key="key" class="menu-card" data-key="{{item.key}}" bindtap="openMenu">
+        <text class="menu-title">{{item.title}}</text>
+        <text class="menu-meta">进入 {{item.title}}</text>
+      </view>
+    </view>
+  </view>
+</view>

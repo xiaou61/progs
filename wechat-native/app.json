@@ -1,0 +1,26 @@
+{
+  "pages": [
+    "pages/login/index",
+    "pages/home/index",
+    "pages/teacher/dashboard/index",
+    "pages/teacher/competition-editor/index",
+    "pages/competition/list/index",
+    "pages/competition/detail/index",
+    "pages/competition/register/index",
+    "pages/competition/checkin/index",
+    "pages/competition/submission/index",
+    "pages/competition/result/index",
+    "pages/message/index",
+    "pages/message/chat/index",
+    "pages/points/index",
+    "pages/profile/index"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f7fb",
+    "backgroundTextStyle": "light"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

@@ -1,0 +1,6 @@
+.tip-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+  margin-bottom: 20rpx;
+}
