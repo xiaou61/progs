@@ -22,7 +22,7 @@
 
     <view class="field">
       <text class="label">当前账号</text>
-      <text class="list-meta">用户 #{{userId}} · {{roleCode === 'TEACHER' ? '老师账号' : '学生账号'}}</text>
+      <text class="list-meta">{{accountLabel}} · {{roleCode === 'TEACHER' ? '老师账号' : '学生账号'}}</text>
     </view>
 
     <view class="field">

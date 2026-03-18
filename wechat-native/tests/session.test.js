@@ -25,13 +25,17 @@ test('session utilities should persist and restore login session', () => {
   saveSession({
     userId: 1001,
     roleCode: 'TEACHER',
-    token: 'token-1001'
+    token: 'token-1001',
+    studentNo: 'T20260001',
+    realName: '王老师'
   })
 
   assert.deepEqual(loadSession(), {
     userId: 1001,
     roleCode: 'TEACHER',
-    token: 'token-1001'
+    token: 'token-1001',
+    studentNo: 'T20260001',
+    realName: '王老师'
   })
   assert.equal(getAccessToken(), 'token-1001')
 

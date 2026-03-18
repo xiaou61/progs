@@ -1,7 +1,8 @@
 const { fetchCompetitions } = require('../../../services/competition')
 const {
   fetchCompetitionSubmissions,
-  submitCompetitionWork
+  submitCompetitionWork,
+  uploadCompetitionWorkFile
 } = require('../../../services/submission')
 const { formatCompetitionDateTime, resolveCompetitionId } = require('../../../utils/competition')
 const { getSession, requireLogin } = require('../../../utils/auth')
@@ -25,6 +26,9 @@ Page({
     competitionTitle: '未选择比赛',
     competitionDesc: '支持重新上传并保留版本号，最终以最新版本作为评审依据。',
     fileUrl: '',
+    selectedFilePath: '',
+    selectedFileName: '',
+    selectedFileSizeLabel: '',
     reuploadAllowed: false,
     loading: false,
     submitting: false,
@@ -79,7 +83,10 @@ Page({
         competitionTitle: currentCompetition ? currentCompetition.title : this.data.competitionTitle,
         competitionDesc: currentCompetition ? currentCompetition.description : this.data.competitionDesc,
         versionCards,
-        fileUrl: versionCards.length > 0 ? versionCards[0].fileName : ''
+        fileUrl: versionCards.length > 0 ? versionCards[0].fileName : '',
+        selectedFilePath: '',
+        selectedFileName: '',
+        selectedFileSizeLabel: ''
       })
     } catch (error) {
       this.setData({
@@ -90,32 +97,74 @@ Page({
     }
   },
 
+  chooseLocalFile() {
+    if (typeof wx === 'undefined' || typeof wx.chooseMessageFile !== 'function') {
+      this.setData({
+        error: '当前环境不支持本地文件选择'
+      })
+      return
+    }
+
+    this.setData({
+      error: '',
+      success: ''
+    })
+
+    wx.chooseMessageFile({
+      count: 1,
+      type: 'file',
+      success: (result) => {
+        const file = result && Array.isArray(result.tempFiles) ? result.tempFiles[0] : null
+        if (!file) {
+          return
+        }
+        this.setData({
+          selectedFilePath: file.path || '',
+          selectedFileName: file.name || '未命名文件',
+          selectedFileSizeLabel: formatFileSize(file.size)
+        })
+      },
+      fail: (error) => {
+        if (error && typeof error.errMsg === 'string' && error.errMsg.includes('cancel')) {
+          return
+        }
+        this.setData({
+          error: '选择文件失败，请重试'
+        })
+      }
+    })
+  },
+
   async submitWork() {
     const session = getSession()
-    const trimmedFileUrl = this.data.fileUrl.trim()
     this.setData({
       submitting: true,
       error: '',
       success: ''
     })
 
-    if (!trimmedFileUrl) {
+    if (!this.data.selectedFilePath) {
       this.setData({
         submitting: false,
-        error: '请输入作品文件地址'
+        error: '请先选择本地文件'
       })
       return
     }
 
     try {
+      const uploadResult = await uploadCompetitionWorkFile({
+        filePath: this.data.selectedFilePath,
+        name: this.data.selectedFileName
+      })
       const submissionId = await submitCompetitionWork({
         competitionId: this.data.competitionId,
         userId: session.userId,
-        fileUrl: trimmedFileUrl,
+        fileUrl: uploadResult.fileUrl,
         reuploadAllowed: this.data.reuploadAllowed
       })
       this.setData({
-        success: `作品提交成功，记录编号 #${submissionId}`
+        success: `作品提交成功，记录编号 #${submissionId}`,
+        fileUrl: uploadResult.fileUrl
       })
       await this.loadSubmissionState()
     } catch (error) {
@@ -127,3 +176,16 @@ Page({
     }
   }
 })
+
+function formatFileSize(size) {
+  if (!size || size <= 0) {
+    return ''
+  }
+  if (size < 1024) {
+    return `${size} B`
+  }
+  if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(1)} KB`
+  }
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`
+}

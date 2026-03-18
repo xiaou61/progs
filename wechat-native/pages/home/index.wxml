@@ -3,7 +3,7 @@
     <view>
       <text class="eyebrow">Campus Competition</text>
       <text class="title">欢迎回来</text>
-      <text class="desc">{{roleCode === 'TEACHER' ? '老师工作台' : '学生工作台'}} · 用户 #{{userId}}</text>
+      <text class="desc">{{roleCode === 'TEACHER' ? '老师工作台' : '学生工作台'}} · {{displayName}}</text>
     </view>
     <button class="ghost-button pill-button" size="mini" bindtap="logout">退出登录</button>
   </view>

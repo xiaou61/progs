@@ -2,7 +2,7 @@
   <view class="hero">
     <text class="eyebrow">Points</text>
     <text class="title">我的积分</text>
-    <text class="desc">当前已接入真实积分账户与流水接口，后续可继续扩展商城兑换等功能。</text>
+    <text class="desc">当前已接入真实积分账户、每日任务和积分流水接口，可直接查看积分变化情况。</text>
   </view>
 
   <view wx:if="{{loading}}" class="state-card">

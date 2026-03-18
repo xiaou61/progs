@@ -33,6 +33,21 @@ function buildAttendanceText(registration) {
   return '待签到'
 }
 
+function resolveAccountLabel(session) {
+  if (!session) {
+    return '未登录用户'
+  }
+  const realName = typeof session.realName === 'string' ? session.realName.trim() : ''
+  if (realName) {
+    return realName
+  }
+  const studentNo = typeof session.studentNo === 'string' ? session.studentNo.trim() : ''
+  if (studentNo) {
+    return studentNo
+  }
+  return `用户 ${session.userId}`
+}
+
 Page({
   data: {
     competitionId: 0,
@@ -44,6 +59,7 @@ Page({
     success: '',
     userId: 0,
     roleCode: 'STUDENT',
+    accountLabel: '',
     registration: null,
     statusText: '未报名',
     attendanceText: '待签到',
@@ -71,7 +87,8 @@ Page({
     const session = getSession()
     this.setData({
       userId: session.userId,
-      roleCode: getRoleCode()
+      roleCode: getRoleCode(),
+      accountLabel: resolveAccountLabel(session)
     })
     this.loadPageData()
   },

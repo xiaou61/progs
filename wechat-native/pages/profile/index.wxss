@@ -32,6 +32,22 @@
   min-height: 120rpx;
 }
 
+.upload-list {
+  margin-top: 16rpx;
+}
+
+.upload-item {
+  position: relative;
+  padding-right: 120rpx;
+}
+
+.upload-remove-btn {
+  position: absolute;
+  right: 20rpx;
+  top: 20rpx;
+  margin-top: 0;
+}
+
 .danger-panel {
   border: 2rpx solid rgba(177, 74, 47, 0.18);
 }

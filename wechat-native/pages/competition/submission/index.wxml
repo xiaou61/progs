@@ -10,8 +10,12 @@
     <text class="section-desc">{{competitionDesc}}</text>
 
     <view class="field">
-      <text class="label">作品地址</text>
-      <input class="input" value="{{fileUrl}}" data-field="fileUrl" placeholder="请输入作品文件 URL" bindinput="updateField" />
+      <text class="label">待上传文件</text>
+      <text class="list-meta">{{selectedFileName ? selectedFileName : '尚未选择本地文件'}}</text>
+      <text wx:if="{{selectedFileSizeLabel}}" class="list-meta">大小 {{selectedFileSizeLabel}}</text>
+      <button class="secondary-btn" disabled="{{loading || submitting}}" bindtap="chooseLocalFile">
+        {{selectedFileName ? '重新选择文件' : '选择本地文件'}}
+      </button>
     </view>
 
     <view class="meta-row field">

@@ -55,6 +55,20 @@ function applyLoginSession(session) {
   }
 }
 
+function updateSessionProfile(partial) {
+  const session = getSession()
+  if (!session) {
+    return null
+  }
+  const nextSession = Object.assign({}, session, partial)
+  const app = getAppSafe()
+  saveSession(nextSession)
+  if (app && app.globalData) {
+    app.globalData.session = nextSession
+  }
+  return nextSession
+}
+
 function logoutSession() {
   const app = getAppSafe()
   clearSession()
@@ -82,5 +96,6 @@ module.exports = {
   hydrateAppSession,
   isLoggedIn,
   logoutSession,
-  requireLogin
+  requireLogin,
+  updateSessionProfile
 }

@@ -1,4 +1,5 @@
 const { request } = require('./http')
+const { uploadLocalFile } = require('./upload')
 
 function fetchProfile(userId) {
   return request(`/api/app/profile?userId=${userId}`)
@@ -32,10 +33,15 @@ function cancelAccount(payload) {
   })
 }
 
+function uploadProfileFile(file) {
+  return uploadLocalFile('/api/app/profile/files', file)
+}
+
 module.exports = {
   cancelAccount,
   changePassword,
   fetchProfile,
   submitFeedback,
-  updateProfile
+  updateProfile,
+  uploadProfileFile
 }

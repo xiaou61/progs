@@ -1,17 +1,28 @@
 const { fetchCompetitions } = require('../../../services/competition')
 const { fetchStudentOverview } = require('../../../services/result')
-const { formatCompetitionDateTime } = require('../../../utils/competition')
+const { resolveCompetitionId } = require('../../../utils/competition')
 const { getSession, requireLogin } = require('../../../utils/auth')
+const { buildAwardCards } = require('../../../utils/result')
 
 Page({
   data: {
+    competitionId: 0,
     loading: false,
     error: '',
     awards: []
   },
 
+  onLoad(options) {
+    this.setData({
+      competitionId: resolveCompetitionId(options)
+    })
+  },
+
   onShow() {
-    if (!requireLogin('/pages/competition/result/index')) {
+    const redirectUrl = this.data.competitionId
+      ? `/pages/competition/result/index?competitionId=${this.data.competitionId}`
+      : '/pages/competition/result/index'
+    if (!requireLogin(redirectUrl)) {
       return
     }
     this.loadResults()
@@ -29,14 +40,12 @@ Page({
         fetchStudentOverview(session.userId),
         fetchCompetitions()
       ])
-      const titleMap = Object.fromEntries(competitions.map((item) => [item.id, item.title]))
       this.setData({
-        awards: overview.results.map((item) => ({
-          ...item,
-          title: titleMap[item.competitionId] || `比赛 #${item.competitionId}`,
-          rankText: `第 ${item.rank} 名`,
-          publishedAtText: formatCompetitionDateTime(item.publishedAt)
-        }))
+        awards: buildAwardCards({
+          competitionId: this.data.competitionId,
+          results: overview.results,
+          competitions
+        })
       })
     } catch (error) {
       this.setData({

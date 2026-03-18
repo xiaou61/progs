@@ -11,6 +11,21 @@ function buildMenuCards(roleCode) {
   }))
 }
 
+function resolveDisplayName(session) {
+  if (!session) {
+    return '未登录用户'
+  }
+  const realName = typeof session.realName === 'string' ? session.realName.trim() : ''
+  if (realName) {
+    return realName
+  }
+  const studentNo = typeof session.studentNo === 'string' ? session.studentNo.trim() : ''
+  if (studentNo) {
+    return studentNo
+  }
+  return `用户 ${session.userId}`
+}
+
 Page({
   data: {
     loading: false,
@@ -18,6 +33,7 @@ Page({
     success: '',
     roleCode: 'STUDENT',
     userId: 0,
+    displayName: '',
     menuCards: [],
     taskProgress: '登录后可查看今日任务状态',
     checkinLabel: '立即签到',
@@ -35,6 +51,7 @@ Page({
     this.setData({
       roleCode,
       userId: session.userId,
+      displayName: resolveDisplayName(session),
       menuCards: buildMenuCards(roleCode)
     })
     this.loadDailyOverview()

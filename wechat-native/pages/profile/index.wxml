@@ -51,8 +51,12 @@
         <input class="input" value="{{profile.phone}}" data-field="profile.phone" placeholder="请输入手机号" bindinput="updateField" />
       </view>
       <view class="field">
-        <text class="label">头像地址</text>
-        <input class="input" value="{{profile.avatarUrl}}" data-field="profile.avatarUrl" placeholder="可选，填写头像 URL" bindinput="updateField" />
+        <text class="label">头像文件</text>
+        <text class="list-meta">{{avatarFileName ? ('待上传：' + avatarFileName) : (profile.avatarUrl ? ('已保存：' + profile.avatarUrl) : '尚未设置头像')}}</text>
+        <text wx:if="{{avatarFileSizeLabel}}" class="list-meta">大小 {{avatarFileSizeLabel}}</text>
+        <button class="secondary-btn" loading="{{saving}}" disabled="{{saving}}" bindtap="chooseAvatar">
+          {{avatarFileName ? '重新选择头像' : '选择本地头像'}}
+        </button>
       </view>
       <view class="field-row">
         <view class="field field-half">
@@ -139,8 +143,20 @@
         <textarea class="textarea" value="{{feedbackForm.content}}" maxlength="300" data-field="feedbackForm.content" placeholder="告诉我们你在使用中遇到的问题或建议" bindinput="updateField" />
       </view>
       <view class="field">
-        <text class="label">图片地址</text>
-        <textarea class="textarea feedback-textarea" value="{{feedbackForm.imageUrls}}" data-field="feedbackForm.imageUrls" placeholder="可选，每行一个图片 URL" bindinput="updateField" />
+        <text class="label">反馈图片</text>
+        <text class="list-meta">{{feedbackFiles.length > 0 ? ('已选择 ' + feedbackFiles.length + ' 张图片') : '可选，最多上传 3 张截图'}}</text>
+        <button class="secondary-btn" loading="{{feedbackSaving}}" disabled="{{feedbackSaving}}" bindtap="chooseFeedbackImages">
+          {{feedbackFiles.length > 0 ? '继续添加图片' : '选择反馈图片'}}
+        </button>
+        <view wx:if="{{feedbackFiles.length > 0}}" class="upload-list">
+          <view wx:for="{{feedbackFiles}}" wx:key="filePath" class="list-item upload-item">
+            <text class="list-title">{{item.name}}</text>
+            <text wx:if="{{item.sizeLabel}}" class="list-meta">{{item.sizeLabel}}</text>
+            <button class="ghost-button pill-button upload-remove-btn" size="mini" data-index="{{index}}" bindtap="removeFeedbackFile">
+              移除
+            </button>
+          </view>
+        </view>
       </view>
       <button class="secondary-btn" loading="{{feedbackSaving}}" disabled="{{feedbackSaving}}" bindtap="saveFeedback">
         {{feedbackSaving ? '提交中...' : '提交反馈'}}
