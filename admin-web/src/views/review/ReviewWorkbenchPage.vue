@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
+import {
+  fetchManagedCompetitions,
+  type CompetitionManageItem
+} from '@/api/competition-manage'
 import {
   fetchCompetitionScores,
   fetchReviewTasks,
@@ -8,9 +12,14 @@ import {
   type CompetitionScoreItem,
   type ReviewTaskItem
 } from '@/api/review'
+import { useAdminSessionStore } from '@/stores/admin-session'
 import { validatePublishResultForm } from '@/utils/score-publish-form'
 
-const competitionId = ref(1)
+const sessionStore = useAdminSessionStore()
+const defaultReviewerName = sessionStore.displayName.trim()
+const competitions = ref<CompetitionManageItem[]>([])
+const selectedCompetitionId = ref(0)
+const competitionLoading = ref(false)
 const loading = ref(false)
 const error = ref('')
 const publishError = ref('')
@@ -24,7 +33,7 @@ const scores = ref<CompetitionScoreItem[]>([])
 const reviewForm = reactive({
   submissionId: 0,
   studentId: 0,
-  reviewerName: '王老师',
+  reviewerName: defaultReviewerName,
   reviewComment: '',
   suggestedScore: 90
 })
@@ -34,21 +43,75 @@ const publishForm = reactive({
   rank: 1,
   awardName: '一等奖',
   points: 30,
-  reviewerName: '王老师',
+  reviewerName: defaultReviewerName,
   reviewComment: ''
 })
+const selectedCompetition = computed(() =>
+  competitions.value.find((item) => item.id === selectedCompetitionId.value) ?? null
+)
+const taskOptions = computed(() =>
+  tasks.value.map((item) => ({
+    submissionId: item.submissionId,
+    label: `作品 #${item.submissionId} · 学生 ${item.studentId} · ${item.status}`
+  }))
+)
 
-async function loadWorkbench() {
+function resetForms() {
+  reviewForm.submissionId = 0
+  reviewForm.studentId = 0
+  reviewForm.reviewerName = defaultReviewerName
+  reviewForm.reviewComment = ''
+  reviewForm.suggestedScore = 90
+  publishForm.studentId = 0
+  publishForm.score = 95
+  publishForm.rank = 1
+  publishForm.awardName = '一等奖'
+  publishForm.points = 30
+  publishForm.reviewerName = defaultReviewerName
+  publishForm.reviewComment = ''
+}
+
+async function loadCompetitions(preferId?: number) {
+  competitionLoading.value = true
+  error.value = ''
+  try {
+    competitions.value = await fetchManagedCompetitions()
+    const nextCompetitionId = preferId || selectedCompetitionId.value || competitions.value[0]?.id || 0
+    selectedCompetitionId.value = nextCompetitionId
+    if (!nextCompetitionId) {
+      tasks.value = []
+      scores.value = []
+      resetForms()
+      return
+    }
+    await loadWorkbench(nextCompetitionId)
+  } catch (loadError) {
+    error.value = loadError instanceof Error ? loadError.message : '加载比赛列表失败'
+  } finally {
+    competitionLoading.value = false
+  }
+}
+
+async function loadWorkbench(competitionId = selectedCompetitionId.value) {
+  if (!competitionId) {
+    tasks.value = []
+    scores.value = []
+    return
+  }
   loading.value = true
   error.value = ''
 
   try {
     const [taskItems, scoreItems] = await Promise.all([
-      fetchReviewTasks(competitionId.value),
-      fetchCompetitionScores(competitionId.value)
+      fetchReviewTasks(competitionId),
+      fetchCompetitionScores(competitionId)
     ])
     tasks.value = taskItems
     scores.value = scoreItems
+    if (!taskItems.some((item) => item.submissionId === reviewForm.submissionId)) {
+      reviewForm.submissionId = 0
+      reviewForm.studentId = 0
+    }
   } catch (loadError) {
     error.value = loadError instanceof Error ? loadError.message : '加载评审数据失败'
   } finally {
@@ -69,10 +132,23 @@ function fillStudentId(studentId: number) {
   publishError.value = ''
 }
 
+function resolveReviewerName(value: string | null) {
+  return value?.trim() ? value : '未分配'
+}
+
+function handleTaskSelection() {
+  const matchedTask = tasks.value.find((item) => item.submissionId === reviewForm.submissionId)
+  if (!matchedTask) {
+    reviewForm.studentId = 0
+    return
+  }
+  pickTask(matchedTask)
+}
+
 function pickTask(item: ReviewTaskItem) {
   reviewForm.submissionId = item.submissionId
   reviewForm.studentId = item.studentId
-  reviewForm.reviewerName = item.reviewerName || '王老师'
+  reviewForm.reviewerName = item.reviewerName?.trim() || defaultReviewerName
   reviewForm.reviewComment = item.reviewComment ?? ''
   reviewForm.suggestedScore = item.suggestedScore ?? 90
   publishForm.studentId = item.studentId
@@ -85,9 +161,22 @@ function pickTask(item: ReviewTaskItem) {
   reviewSuccess.value = ''
 }
 
+async function handleCompetitionChange() {
+  resetForms()
+  publishError.value = ''
+  publishSuccess.value = ''
+  reviewError.value = ''
+  reviewSuccess.value = ''
+  await loadWorkbench()
+}
+
 async function submitReview() {
   reviewError.value = ''
   reviewSuccess.value = ''
+  if (!selectedCompetitionId.value) {
+    reviewError.value = '请先选择比赛'
+    return
+  }
   if (!reviewForm.submissionId || !reviewForm.studentId) {
     reviewError.value = '请先从右侧待评作品中选择一条记录'
     return
@@ -108,7 +197,7 @@ async function submitReview() {
   reviewing.value = true
   try {
     await submitReviewTask({
-      competitionId: competitionId.value,
+      competitionId: selectedCompetitionId.value,
       submissionId: reviewForm.submissionId,
       studentId: reviewForm.studentId,
       reviewerName: reviewForm.reviewerName,
@@ -133,7 +222,7 @@ async function submitResult() {
   publishSuccess.value = ''
 
   const validationMessage = validatePublishResultForm({
-    competitionId: competitionId.value,
+    competitionId: selectedCompetitionId.value,
     studentId: publishForm.studentId,
     score: publishForm.score,
     rank: publishForm.rank,
@@ -148,7 +237,7 @@ async function submitResult() {
   publishing.value = true
   try {
     const scoreId = await publishCompetitionResult({
-      competitionId: competitionId.value,
+      competitionId: selectedCompetitionId.value,
       studentId: publishForm.studentId,
       score: publishForm.score,
       rank: publishForm.rank,
@@ -167,7 +256,7 @@ async function submitResult() {
 }
 
 onMounted(() => {
-  void loadWorkbench()
+  void loadCompetitions()
 })
 </script>
 
@@ -181,29 +270,51 @@ onMounted(() => {
 
     <section class="toolbar">
       <label class="field">
-        <span>比赛编号</span>
-        <input v-model.number="competitionId" type="number" min="1" />
+        <span>当前比赛</span>
+        <select
+          v-model.number="selectedCompetitionId"
+          :disabled="competitionLoading || loading || competitions.length === 0"
+          @change="handleCompetitionChange"
+        >
+          <option :value="0" disabled>{{ competitions.length ? '请选择比赛' : '暂无可评审比赛' }}</option>
+          <option v-for="item in competitions" :key="item.id" :value="item.id">
+            #{{ item.id }} {{ item.title }}
+          </option>
+        </select>
       </label>
-      <button type="button" :disabled="loading" @click="loadWorkbench">
-        {{ loading ? '加载中...' : '刷新工作台' }}
+      <button type="button" :disabled="loading || competitionLoading" @click="loadCompetitions(selectedCompetitionId)">
+        {{ loading || competitionLoading ? '加载中...' : '刷新工作台' }}
       </button>
     </section>
+    <p v-if="selectedCompetition" class="toolbar-hint">
+      {{ selectedCompetition.title }} · {{ selectedCompetition.status }} · 发起人 #{{ selectedCompetition.organizerId }}
+    </p>
+    <p v-else-if="!competitionLoading" class="toolbar-hint">当前没有可评审的比赛，请先完成比赛发布。</p>
 
     <section class="board">
       <div class="publish-card">
         <h2>评审与结果发布</h2>
         <p v-if="error" class="error-text">{{ error }}</p>
         <p v-else>待评作品 {{ tasks.length }} 条，已发布结果 {{ scores.length }} 条。</p>
-        <p>建议先保存评审意见，再将建议分数和评语带入结果发布表单。</p>
+        <p>建议先选择待评作品并保存评审意见，再将建议分数和评语带入结果发布表单。</p>
 
         <div class="publish-form review-form">
           <label class="form-field">
             <span>作品编号</span>
-            <input v-model.number="reviewForm.submissionId" type="number" min="1" />
+            <select
+              v-model.number="reviewForm.submissionId"
+              :disabled="loading || tasks.length === 0"
+              @change="handleTaskSelection"
+            >
+              <option :value="0" disabled>{{ tasks.length ? '请选择待评作品' : '当前没有可选作品' }}</option>
+              <option v-for="item in taskOptions" :key="item.submissionId" :value="item.submissionId">
+                {{ item.label }}
+              </option>
+            </select>
           </label>
           <label class="form-field">
             <span>学生编号</span>
-            <input v-model.number="reviewForm.studentId" type="number" min="1" />
+            <input :value="reviewForm.studentId || ''" type="number" min="1" readonly />
           </label>
           <label class="form-field">
             <span>评审老师</span>
@@ -227,7 +338,7 @@ onMounted(() => {
         <div class="publish-form">
           <label class="form-field">
             <span>学生编号</span>
-            <input v-model.number="publishForm.studentId" type="number" min="1" />
+            <input :value="publishForm.studentId || ''" type="number" min="1" readonly />
           </label>
           <label class="form-field">
             <span>成绩</span>
@@ -264,12 +375,12 @@ onMounted(() => {
       <div class="task-list">
         <article v-if="!loading && tasks.length === 0" class="task-card empty-card">
           <h3>暂无待评作品</h3>
-          <p>当前比赛还没有提交记录，或者你输入的比赛编号暂无数据。</p>
+          <p>当前比赛还没有提交记录，待有作品上传后即可在这里完成评审。</p>
         </article>
 
         <article v-for="item in tasks" :key="item.submissionId" class="task-card">
           <h3>作品 #{{ item.submissionId }}</h3>
-          <p>学生 {{ item.studentId }} · {{ item.reviewerName }}</p>
+          <p>学生 {{ item.studentId }} · {{ resolveReviewerName(item.reviewerName) }}</p>
           <strong>{{ item.status }}</strong>
           <p v-if="item.reviewComment" class="review-note">{{ item.reviewComment }}</p>
           <small v-if="item.suggestedScore !== null">建议分数 {{ item.suggestedScore }}</small>
@@ -352,13 +463,20 @@ onMounted(() => {
   font-size: 14px;
 }
 
-.field input {
+.field input,
+.field select {
   width: 180px;
   padding: 12px 16px;
   border: 1px solid #d8e0e7;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.88);
   color: #1f2f3c;
+}
+
+.toolbar-hint {
+  margin: -10px 0 24px;
+  color: #56697a;
+  font-size: 14px;
 }
 
 .publish-card,
@@ -397,6 +515,7 @@ onMounted(() => {
 }
 
 .form-field input,
+.form-field select,
 .form-field textarea {
   padding: 11px 14px;
   border: 1px solid #d8e0e7;

@@ -12,7 +12,7 @@ const { buildMessageChatRoute } = require('../../../utils/message')
 
 Page({
   data: {
-    competitionId: 1,
+    competitionId: 0,
     loading: false,
     error: '',
     shareLoading: false,
@@ -39,6 +39,13 @@ Page({
   },
 
   onShow() {
+    if (!this.data.competitionId) {
+      this.setData({
+        detail: null,
+        error: '缺少比赛编号，请从比赛列表重新进入。'
+      })
+      return
+    }
     this.loadCompetitionDetail()
   },
 

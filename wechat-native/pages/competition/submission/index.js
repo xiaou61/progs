@@ -21,10 +21,10 @@ function buildVersionCards(items, userId) {
 
 Page({
   data: {
-    competitionId: 1,
-    competitionTitle: '比赛 #1',
+    competitionId: 0,
+    competitionTitle: '未选择比赛',
     competitionDesc: '支持重新上传并保留版本号，最终以最新版本作为评审依据。',
-    fileUrl: 'https://example.com/work-v1.pptx',
+    fileUrl: '',
     reuploadAllowed: false,
     loading: false,
     submitting: false,
@@ -40,6 +40,12 @@ Page({
   },
 
   onShow() {
+    if (!this.data.competitionId) {
+      this.setData({
+        error: '缺少比赛编号，请从比赛列表重新进入。'
+      })
+      return
+    }
     const redirectUrl = `/pages/competition/submission/index?competitionId=${this.data.competitionId}`
     if (!requireLogin(redirectUrl)) {
       return
@@ -49,7 +55,7 @@ Page({
 
   updateField(event) {
     const field = event.currentTarget.dataset.field
-    const value = field === 'reuploadAllowed' ? event.detail.value : event.detail.value
+    const value = event.detail.value
     this.setData({
       [field]: value
     })
@@ -73,7 +79,7 @@ Page({
         competitionTitle: currentCompetition ? currentCompetition.title : this.data.competitionTitle,
         competitionDesc: currentCompetition ? currentCompetition.description : this.data.competitionDesc,
         versionCards,
-        fileUrl: versionCards.length > 0 ? versionCards[0].fileName : this.data.fileUrl
+        fileUrl: versionCards.length > 0 ? versionCards[0].fileName : ''
       })
     } catch (error) {
       this.setData({
@@ -86,17 +92,26 @@ Page({
 
   async submitWork() {
     const session = getSession()
+    const trimmedFileUrl = this.data.fileUrl.trim()
     this.setData({
       submitting: true,
       error: '',
       success: ''
     })
 
+    if (!trimmedFileUrl) {
+      this.setData({
+        submitting: false,
+        error: '请输入作品文件地址'
+      })
+      return
+    }
+
     try {
       const submissionId = await submitCompetitionWork({
         competitionId: this.data.competitionId,
         userId: session.userId,
-        fileUrl: this.data.fileUrl,
+        fileUrl: trimmedFileUrl,
         reuploadAllowed: this.data.reuploadAllowed
       })
       this.setData({

@@ -8,8 +8,8 @@ Page({
     loading: false,
     error: '',
     roleCode: 'STUDENT',
-    studentNo: 'S20260001',
-    password: 'Abcd1234'
+    studentNo: '',
+    password: ''
   },
 
   onLoad(options) {
@@ -37,16 +37,6 @@ Page({
   changeRole(event) {
     this.setData({
       roleCode: event.detail.value,
-      error: ''
-    })
-  },
-
-  applyPreset(event) {
-    const roleCode = event.currentTarget.dataset.role
-    this.setData({
-      roleCode,
-      studentNo: roleCode === 'TEACHER' ? 'T20260001' : 'S20260001',
-      password: 'Abcd1234',
       error: ''
     })
   },

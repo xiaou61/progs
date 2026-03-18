@@ -37,7 +37,7 @@ function resolveCompetitionStatusLabel(item, now) {
 
 function resolveCompetitionId(options) {
   const rawCompetitionId = options && options.competitionId
-  return toPositiveNumber(Array.isArray(rawCompetitionId) ? rawCompetitionId[0] : rawCompetitionId, 1)
+  return toPositiveNumber(Array.isArray(rawCompetitionId) ? rawCompetitionId[0] : rawCompetitionId, 0)
 }
 
 module.exports = {

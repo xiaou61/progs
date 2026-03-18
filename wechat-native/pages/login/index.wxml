@@ -14,11 +14,6 @@
   </view>
 
   <view class="panel login-form">
-    <view class="button-row compact-row">
-      <button class="secondary-btn pill-button" data-role="STUDENT" bindtap="applyPreset">学生演示账号</button>
-      <button class="secondary-btn pill-button" data-role="TEACHER" bindtap="applyPreset">老师演示账号</button>
-    </view>
-
     <view class="field">
       <text class="label">身份</text>
       <radio-group class="role-group" bindchange="changeRole">

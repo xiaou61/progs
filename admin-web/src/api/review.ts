@@ -4,7 +4,7 @@ export type ReviewTaskItem = {
   competitionId: number
   submissionId: number
   studentId: number
-  reviewerName: string
+  reviewerName: string | null
   status: string
   reviewComment: string | null
   suggestedScore: number | null

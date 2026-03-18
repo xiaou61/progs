@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { fetchManagedCompetitions, type CompetitionManageItem } from '@/api/competition-manage'
+import { fetchUsers, type UserItem } from '@/api/users'
 import {
   fetchCompetitionRegistrations,
   manualAddRegistration,
@@ -12,6 +13,7 @@ import {
 
 const competitions = ref<CompetitionManageItem[]>([])
 const registrations = ref<RegistrationManageItem[]>([])
+const users = ref<UserItem[]>([])
 const selectedCompetitionId = ref<number | null>(null)
 const competitionLoading = ref(false)
 const registrationLoading = ref(false)
@@ -23,9 +25,25 @@ const manualForm = reactive({
   userId: 0,
   remark: ''
 })
+const rejectForm = reactive({
+  registrationId: 0,
+  reason: ''
+})
 
 const selectedCompetition = computed(() =>
   competitions.value.find((item) => item.id === selectedCompetitionId.value) ?? null
+)
+const studentOptions = computed(() =>
+  users.value
+    .filter((user) => user.status === 'ENABLED' && user.roleCode === 'STUDENT')
+    .map((user) => ({
+      id: user.id,
+      label: `${user.realName} · ${user.studentNo}`,
+      phone: user.phone
+    }))
+)
+const selectedStudent = computed(() =>
+  studentOptions.value.find((item) => item.id === manualForm.userId) ?? null
 )
 
 const registeredCount = computed(() =>
@@ -43,6 +61,17 @@ const absentCount = computed(() =>
 function clearNotice() {
   error.value = ''
   success.value = ''
+}
+
+function applyDefaultStudent() {
+  if (!manualForm.userId && studentOptions.value.length > 0) {
+    manualForm.userId = studentOptions.value[0].id
+  }
+}
+
+function userText(userId: number) {
+  const matched = users.value.find((user) => user.id === userId)
+  return matched ? `${matched.realName} · ${matched.studentNo}` : `用户 #${userId}`
 }
 
 function resolveStatusLabel(status: RegistrationManageItem['status']) {
@@ -68,7 +97,10 @@ function resolveAttendanceLabel(attendanceStatus: RegistrationManageItem['attend
 async function loadCompetitions(preferId?: number | null) {
   competitionLoading.value = true
   try {
-    competitions.value = await fetchManagedCompetitions()
+    const [nextCompetitions, nextUsers] = await Promise.all([fetchManagedCompetitions(), fetchUsers()])
+    competitions.value = nextCompetitions
+    users.value = nextUsers
+    applyDefaultStudent()
     const nextCompetitionId = preferId ?? selectedCompetitionId.value ?? competitions.value[0]?.id ?? null
     selectedCompetitionId.value = nextCompetitionId
     if (nextCompetitionId) {
@@ -112,7 +144,7 @@ async function handleManualAdd() {
     return
   }
   if (manualForm.userId <= 0) {
-    error.value = '请填写有效的用户编号'
+    error.value = '请选择补录学生'
     return
   }
 
@@ -134,17 +166,33 @@ async function handleManualAdd() {
   }
 }
 
-async function handleReject(registrationId: number) {
+function openRejectEditor(registrationId: number) {
   clearNotice()
-  const reason = globalThis.window?.prompt?.('请输入驳回原因', '资料不完整')?.trim()
-  if (!reason) {
+  rejectForm.registrationId = registrationId
+  rejectForm.reason = '资料不完整'
+}
+
+function closeRejectEditor() {
+  rejectForm.registrationId = 0
+  rejectForm.reason = ''
+}
+
+async function submitReject() {
+  clearNotice()
+  if (!rejectForm.registrationId) {
+    error.value = '请选择要驳回的报名记录'
+    return
+  }
+  if (!rejectForm.reason.trim()) {
+    error.value = '请输入驳回原因'
     return
   }
 
   actionLoading.value = true
   try {
-    await rejectRegistration(registrationId, reason)
-    success.value = `报名记录 #${registrationId} 已驳回`
+    await rejectRegistration(rejectForm.registrationId, rejectForm.reason.trim())
+    success.value = `报名记录 #${rejectForm.registrationId} 已驳回`
+    closeRejectEditor()
     await loadRegistrations(selectedCompetitionId.value)
   } catch (submitError) {
     error.value = submitError instanceof Error ? submitError.message : '驳回报名失败'
@@ -243,9 +291,15 @@ onMounted(() => {
             </div>
           </div>
           <label class="field">
-            <span>用户编号</span>
-            <input v-model.number="manualForm.userId" type="number" min="1" placeholder="请输入学生用户编号" />
+            <span>学生账号</span>
+            <select v-model.number="manualForm.userId">
+              <option :value="0" disabled>{{ studentOptions.length ? '请选择学生账号' : '暂无可补录学生' }}</option>
+              <option v-for="item in studentOptions" :key="item.id" :value="item.id">
+                {{ item.label }}
+              </option>
+            </select>
           </label>
+          <p v-if="selectedStudent" class="field-hint">联系电话：{{ selectedStudent.phone }}</p>
           <label class="field">
             <span>备注</span>
             <textarea v-model="manualForm.remark" placeholder="例如：后台补录、现场补录"></textarea>
@@ -278,7 +332,7 @@ onMounted(() => {
             <div class="registration-head">
               <div>
                 <strong>记录 #{{ item.id }}</strong>
-                <p>用户 #{{ item.userId }} · {{ resolveStatusLabel(item.status) }}</p>
+                <p>{{ userText(item.userId) }} · {{ resolveStatusLabel(item.status) }}</p>
               </div>
               <span class="attendance-badge" :class="`attendance-${item.attendanceStatus.toLowerCase()}`">
                 {{ resolveAttendanceLabel(item.attendanceStatus) }}
@@ -292,7 +346,7 @@ onMounted(() => {
                 class="ghost-button"
                 type="button"
                 :disabled="actionLoading || item.status !== 'REGISTERED'"
-                @click="handleReject(item.id)"
+                @click="openRejectEditor(item.id)"
               >
                 驳回报名
               </button>
@@ -312,6 +366,20 @@ onMounted(() => {
               >
                 标记缺席
               </button>
+            </div>
+            <div v-if="rejectForm.registrationId === item.id" class="reject-editor">
+              <label class="field">
+                <span>驳回原因</span>
+                <textarea v-model="rejectForm.reason" placeholder="请输入驳回原因，便于留痕"></textarea>
+              </label>
+              <div class="action-row reject-actions">
+                <button class="ghost-button" type="button" :disabled="actionLoading" @click="closeRejectEditor">
+                  取消
+                </button>
+                <button class="danger-button" type="button" :disabled="actionLoading" @click="submitReject">
+                  {{ actionLoading ? '提交中...' : '确认驳回' }}
+                </button>
+              </div>
             </div>
           </article>
         </div>
@@ -442,6 +510,12 @@ strong {
   color: #233243;
 }
 
+.field-hint {
+  margin: -4px 0 0;
+  color: #607082;
+  font-size: 13px;
+}
+
 input,
 textarea,
 select,
@@ -555,6 +629,16 @@ textarea {
 
 .compact-head {
   margin-bottom: 14px;
+}
+
+.reject-editor {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e4ebf2;
+}
+
+.reject-actions {
+  margin-bottom: 0;
 }
 
 @media (max-width: 1080px) {

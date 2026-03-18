@@ -35,9 +35,9 @@ function buildAttendanceText(registration) {
 
 Page({
   data: {
-    competitionId: 1,
-    competitionTitle: '比赛 #1',
-    competitionDesc: '系统将使用当前账号资料完成比赛报名。',
+    competitionId: 0,
+    competitionTitle: '未选择比赛',
+    competitionDesc: '请从比赛列表进入后再完成报名。',
     loading: false,
     submitting: false,
     error: '',
@@ -57,6 +57,12 @@ Page({
   },
 
   onShow() {
+    if (!this.data.competitionId) {
+      this.setData({
+        error: '缺少比赛编号，请从比赛列表重新进入。'
+      })
+      return
+    }
     const redirectUrl = `/pages/competition/register/index?competitionId=${this.data.competitionId}`
     if (!requireLogin(redirectUrl)) {
       return

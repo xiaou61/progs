@@ -10,10 +10,11 @@ import {
   updateCompetitionFeature,
   type CompetitionManageItem
 } from '@/api/competition-manage'
+import { fetchUsers, type UserItem } from '@/api/users'
 import { buildPublishPayload, validateCompetitionForm, type CompetitionFormValues } from '@/utils/competition-form'
 
 const defaultForm = (): CompetitionFormValues => ({
-  organizerId: 1001,
+  organizerId: 0,
   title: '',
   description: '',
   signupStartAt: '',
@@ -29,6 +30,7 @@ const featureLoading = ref(false)
 const error = ref('')
 const success = ref('')
 const competitions = ref<CompetitionManageItem[]>([])
+const users = ref<UserItem[]>([])
 const selectedCompetitionId = ref<number | null>(null)
 
 const form = reactive<CompetitionFormValues>(defaultForm())
@@ -39,6 +41,18 @@ const featureForm = reactive({
 
 const submitLabel = computed(() => (selectedCompetitionId.value ? '更新比赛' : '发布比赛'))
 const hasSelection = computed(() => selectedCompetitionId.value !== null)
+const organizerOptions = computed(() =>
+  users.value
+    .filter((user) => user.status === 'ENABLED' && (user.roleCode === 'TEACHER' || user.roleCode === 'ADMIN'))
+    .map((user) => ({
+      id: user.id,
+      label: `${user.realName} · ${user.studentNo} · ${user.roleCode === 'TEACHER' ? '老师' : '管理员'}`,
+      phone: user.phone
+    }))
+)
+const selectedOrganizer = computed(() =>
+  organizerOptions.value.find((item) => item.id === form.organizerId) ?? null
+)
 
 function clearNotice() {
   error.value = ''
@@ -69,14 +83,29 @@ function resetForm() {
   featureForm.recommended = false
   featureForm.pinned = false
   selectedCompetitionId.value = null
+  applyDefaultOrganizer()
   clearNotice()
 }
 
-async function loadCompetitions(preferId?: number | null) {
+function applyDefaultOrganizer() {
+  if (!form.organizerId && organizerOptions.value.length > 0) {
+    form.organizerId = organizerOptions.value[0].id
+  }
+}
+
+function organizerText(organizerId: number) {
+  const matched = users.value.find((user) => user.id === organizerId)
+  return matched ? `${matched.realName} · ${matched.studentNo}` : `发起人 #${organizerId}`
+}
+
+async function loadPageData(preferId?: number | null) {
   listLoading.value = true
   try {
-    competitions.value = await fetchManagedCompetitions()
+    const [nextCompetitions, nextUsers] = await Promise.all([fetchManagedCompetitions(), fetchUsers()])
+    competitions.value = nextCompetitions
+    users.value = nextUsers
     const targetId = preferId ?? selectedCompetitionId.value
+    applyDefaultOrganizer()
     if (!targetId) {
       return
     }
@@ -119,11 +148,11 @@ async function submitCompetition() {
         status: 'PUBLISHED'
       })
       success.value = `比赛 #${selectedCompetitionId.value} 更新成功`
-      await loadCompetitions(selectedCompetitionId.value)
+      await loadPageData(selectedCompetitionId.value)
     } else {
       const competitionId = await publishCompetition(payload)
       success.value = `比赛发布成功，编号 #${competitionId}`
-      await loadCompetitions(competitionId)
+      await loadPageData(competitionId)
     }
   } catch (submitError) {
     error.value = submitError instanceof Error ? submitError.message : '发布或更新比赛失败'
@@ -142,7 +171,7 @@ async function submitDraft() {
   try {
     const competitionId = await saveCompetitionDraft(buildPublishPayload(form))
     success.value = `草稿保存成功，编号 #${competitionId}`
-    await loadCompetitions(competitionId)
+    await loadPageData(competitionId)
   } catch (submitError) {
     error.value = submitError instanceof Error ? submitError.message : '保存草稿失败'
   } finally {
@@ -164,7 +193,7 @@ async function submitFeature() {
       pinned: featureForm.pinned
     })
     success.value = `比赛 #${selectedCompetitionId.value} 的展示状态已更新`
-    await loadCompetitions(selectedCompetitionId.value)
+    await loadPageData(selectedCompetitionId.value)
   } catch (submitError) {
     error.value = submitError instanceof Error ? submitError.message : '更新推荐置顶状态失败'
   } finally {
@@ -183,7 +212,7 @@ async function submitOffline() {
   try {
     await offlineCompetition(selectedCompetitionId.value)
     success.value = `比赛 #${selectedCompetitionId.value} 已下架`
-    await loadCompetitions(selectedCompetitionId.value)
+    await loadPageData(selectedCompetitionId.value)
   } catch (submitError) {
     error.value = submitError instanceof Error ? submitError.message : '下架比赛失败'
   } finally {
@@ -192,7 +221,7 @@ async function submitOffline() {
 }
 
 onMounted(() => {
-  void loadCompetitions()
+  void loadPageData()
 })
 </script>
 
@@ -221,8 +250,14 @@ onMounted(() => {
         <p v-if="success" class="message success-message">{{ success }}</p>
 
         <div class="field">
-          <label>发起人编号</label>
-          <input v-model.number="form.organizerId" type="number" min="1" placeholder="请输入发起人编号" />
+          <label>发起人账号</label>
+          <select v-model.number="form.organizerId">
+            <option :value="0" disabled>{{ organizerOptions.length ? '请选择发起人' : '暂无可选发起账号' }}</option>
+            <option v-for="item in organizerOptions" :key="item.id" :value="item.id">
+              {{ item.label }}
+            </option>
+          </select>
+          <p v-if="selectedOrganizer" class="field-hint">联系电话：{{ selectedOrganizer.phone }}</p>
         </div>
         <div class="field">
           <label>比赛名称</label>
@@ -290,7 +325,7 @@ onMounted(() => {
             <h2>比赛管理列表</h2>
             <p>点击任一比赛可载入到左侧编辑。</p>
           </div>
-          <button class="ghost-button" type="button" @click="loadCompetitions()">刷新列表</button>
+          <button class="ghost-button" type="button" @click="loadPageData()">刷新列表</button>
         </div>
 
         <div v-if="listLoading" class="state-box">
@@ -313,7 +348,7 @@ onMounted(() => {
               <span class="status-badge">{{ item.status }}</span>
             </div>
             <p class="card-desc">{{ item.description }}</p>
-            <p class="card-meta">发起人 #{{ item.organizerId }} · 名额 {{ item.quota }}</p>
+            <p class="card-meta">{{ organizerText(item.organizerId) }} · 名额 {{ item.quota }}</p>
             <p class="card-meta">推荐：{{ item.recommended ? '是' : '否' }} · 置顶：{{ item.pinned ? '是' : '否' }}</p>
           </button>
         </div>
@@ -430,18 +465,26 @@ h2 {
   margin-bottom: 16px;
 }
 
+.field-hint {
+  margin: 0;
+  color: #607082;
+  font-size: 13px;
+}
+
 label {
   font-size: 14px;
   color: #233243;
 }
 
 input,
+select,
 textarea,
 button {
   font: inherit;
 }
 
 input,
+select,
 textarea {
   width: 100%;
   padding: 12px 14px;

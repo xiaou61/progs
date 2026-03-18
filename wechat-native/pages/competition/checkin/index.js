@@ -5,9 +5,9 @@ const { getSession, requireLogin } = require('../../../utils/auth')
 
 Page({
   data: {
-    competitionId: 1,
-    competitionTitle: '比赛 #1',
-    competitionDesc: '比赛已开始，请在规定时段内完成签到。',
+    competitionId: 0,
+    competitionTitle: '未选择比赛',
+    competitionDesc: '请从比赛列表进入后再完成签到。',
     checkedAt: '',
     loading: false,
     submitting: false,
@@ -23,6 +23,12 @@ Page({
   },
 
   onShow() {
+    if (!this.data.competitionId) {
+      this.setData({
+        error: '缺少比赛编号，请从比赛列表重新进入。'
+      })
+      return
+    }
     const redirectUrl = `/pages/competition/checkin/index?competitionId=${this.data.competitionId}`
     if (!requireLogin(redirectUrl)) {
       return
