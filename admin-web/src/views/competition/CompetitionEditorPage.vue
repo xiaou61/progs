@@ -95,7 +95,7 @@ function applyDefaultOrganizer() {
 
 function organizerText(organizerId: number) {
   const matched = users.value.find((user) => user.id === organizerId)
-  return matched ? `${matched.realName} · ${matched.studentNo}` : `发起人 #${organizerId}`
+  return matched ? `${matched.realName} · ${matched.studentNo}` : '发起人信息待补充'
 }
 
 async function loadPageData(preferId?: number | null) {
@@ -169,9 +169,19 @@ async function submitDraft() {
 
   loading.value = true
   try {
-    const competitionId = await saveCompetitionDraft(buildPublishPayload(form))
-    success.value = `草稿保存成功，编号 #${competitionId}`
-    await loadPageData(competitionId)
+    const payload = buildPublishPayload(form)
+    if (selectedCompetitionId.value) {
+      await updateCompetition(selectedCompetitionId.value, {
+        ...payload,
+        status: 'DRAFT'
+      })
+      success.value = `草稿更新成功，编号 #${selectedCompetitionId.value}`
+      await loadPageData(selectedCompetitionId.value)
+    } else {
+      const competitionId = await saveCompetitionDraft(payload)
+      success.value = `草稿保存成功，编号 #${competitionId}`
+      await loadPageData(competitionId)
+    }
   } catch (submitError) {
     error.value = submitError instanceof Error ? submitError.message : '保存草稿失败'
   } finally {

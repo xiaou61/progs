@@ -1,6 +1,7 @@
 package com.campus.competition.modules.competition.service;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.campus.competition.modules.auth.security.ForbiddenException;
 import com.campus.competition.modules.audit.service.ContentAuditService;
 import com.campus.competition.modules.competition.mapper.CompetitionMapper;
 import com.campus.competition.modules.competition.model.CompetitionDetail;
@@ -91,6 +92,25 @@ public class CompetitionService {
       .toList();
   }
 
+  public List<CompetitionDraftSummary> listManagedCompetitionsByOrganizer(Long organizerId) {
+    if (organizerId == null) {
+      throw new IllegalArgumentException("发起人不能为空");
+    }
+    if (competitionMapper != null) {
+      return competitionMapper.selectList(Wrappers.<CompetitionEntity>lambdaQuery()
+          .eq(CompetitionEntity::getOrganizerId, organizerId)
+          .orderByDesc(CompetitionEntity::getId))
+        .stream()
+        .map(this::toManageSummary)
+        .toList();
+    }
+    return competitions.values().stream()
+      .filter(item -> organizerId.equals(item.organizerId()))
+      .sorted(Comparator.comparing(CompetitionDetail::id).reversed())
+      .map(this::toManageSummary)
+      .toList();
+  }
+
   public Long saveDraft(SaveCompetitionDraftCommand command) {
     validateCommand(
       command.organizerId(),
@@ -113,6 +133,38 @@ public class CompetitionService {
       command.signupStartAt(), command.signupEndAt(), command.startAt(), command.endAt(), command.quota(), "DRAFT", false, false);
     competitions.put(id, detail);
     return id;
+  }
+
+  public Long publishForOrganizer(Long organizerId, PublishCompetitionCommand command) {
+    if (command == null) {
+      throw new IllegalArgumentException("比赛信息不能为空");
+    }
+    return publish(new PublishCompetitionCommand(
+      organizerId,
+      command.title(),
+      command.description(),
+      command.signupStartAt(),
+      command.signupEndAt(),
+      command.startAt(),
+      command.endAt(),
+      command.quota()
+    ));
+  }
+
+  public Long saveDraftForOrganizer(Long organizerId, SaveCompetitionDraftCommand command) {
+    if (command == null) {
+      throw new IllegalArgumentException("比赛信息不能为空");
+    }
+    return saveDraft(new SaveCompetitionDraftCommand(
+      organizerId,
+      command.title(),
+      command.description(),
+      command.signupStartAt(),
+      command.signupEndAt(),
+      command.startAt(),
+      command.endAt(),
+      command.quota()
+    ));
   }
 
   public CompetitionDetail update(Long competitionId, UpdateCompetitionCommand command) {
@@ -161,6 +213,24 @@ public class CompetitionService {
     return updated;
   }
 
+  public CompetitionDetail updateForOrganizer(Long organizerId, Long competitionId, UpdateCompetitionCommand command) {
+    if (command == null) {
+      throw new IllegalArgumentException("比赛信息不能为空");
+    }
+    assertOrganizerOwnsCompetition(organizerId, competitionId);
+    return update(competitionId, new UpdateCompetitionCommand(
+      organizerId,
+      command.title(),
+      command.description(),
+      command.signupStartAt(),
+      command.signupEndAt(),
+      command.startAt(),
+      command.endAt(),
+      command.quota(),
+      command.status()
+    ));
+  }
+
   public CompetitionDetail updateFeature(Long competitionId, CompetitionFeatureCommand command) {
     if (competitionMapper != null) {
       CompetitionEntity entity = getEntity(competitionId);
@@ -189,6 +259,11 @@ public class CompetitionService {
     return updated;
   }
 
+  public CompetitionDetail updateFeatureForOrganizer(Long organizerId, Long competitionId, CompetitionFeatureCommand command) {
+    assertOrganizerOwnsCompetition(organizerId, competitionId);
+    return updateFeature(competitionId, command);
+  }
+
   public boolean offline(Long competitionId) {
     if (competitionMapper != null) {
       CompetitionEntity entity = getEntity(competitionId);
@@ -213,6 +288,11 @@ public class CompetitionService {
       existing.pinned()
     ));
     return true;
+  }
+
+  public boolean offlineForOrganizer(Long organizerId, Long competitionId) {
+    assertOrganizerOwnsCompetition(organizerId, competitionId);
+    return offline(competitionId);
   }
 
   public CompetitionDetail getCompetition(Long competitionId) {
@@ -412,6 +492,16 @@ public class CompetitionService {
       throw new IllegalArgumentException("比赛不存在");
     }
     return entity;
+  }
+
+  private void assertOrganizerOwnsCompetition(Long organizerId, Long competitionId) {
+    if (organizerId == null) {
+      throw new IllegalArgumentException("发起人不能为空");
+    }
+    CompetitionDetail detail = getCompetition(competitionId);
+    if (!organizerId.equals(detail.organizerId())) {
+      throw new ForbiddenException("无权管理其他老师发起的比赛");
+    }
   }
 
   private String normalizeStatus(String incoming, String fallback) {

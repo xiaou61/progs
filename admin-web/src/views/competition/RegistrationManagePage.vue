@@ -71,7 +71,7 @@ function applyDefaultStudent() {
 
 function userText(userId: number) {
   const matched = users.value.find((user) => user.id === userId)
-  return matched ? `${matched.realName} · ${matched.studentNo}` : `用户 #${userId}`
+  return matched ? `${matched.realName} · ${matched.studentNo}` : '用户信息待补充'
 }
 
 function resolveStatusLabel(status: RegistrationManageItem['status']) {

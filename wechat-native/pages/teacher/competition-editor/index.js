@@ -1,10 +1,10 @@
 const {
-  fetchManagedCompetitions,
-  offlineCompetition,
-  publishCompetition,
-  saveCompetitionDraft,
-  updateCompetition,
-  updateCompetitionFeature
+  fetchTeacherManagedCompetitions,
+  offlineTeacherCompetition,
+  publishTeacherCompetition,
+  saveTeacherCompetitionDraft,
+  updateTeacherCompetition,
+  updateTeacherCompetitionFeature
 } = require('../../../services/competition')
 const { getRoleCode, getSession, requireLogin } = require('../../../utils/auth')
 
@@ -113,10 +113,9 @@ Page({
     })
 
     try {
-      const competitions = await fetchManagedCompetitions()
-      const myCompetitions = competitions.filter((item) => item.organizerId === session.userId)
+      const myCompetitions = await fetchTeacherManagedCompetitions(session.userId)
       this.setData({
-        competitions,
+        competitions: myCompetitions,
         myCompetitions
       })
 
@@ -191,6 +190,7 @@ Page({
   },
 
   async submitPublish() {
+    const session = getSession()
     const validationMessage = this.validateForm()
     if (validationMessage) {
       this.setData({ error: validationMessage, success: '' })
@@ -205,7 +205,7 @@ Page({
 
     try {
       if (this.data.selectedCompetitionId) {
-        await updateCompetition(this.data.selectedCompetitionId, {
+        await updateTeacherCompetition(session.userId, this.data.selectedCompetitionId, {
           ...this.buildPayload(),
           status: 'PUBLISHED'
         })
@@ -214,7 +214,7 @@ Page({
         })
         await this.loadCompetitions(this.data.selectedCompetitionId)
       } else {
-        const competitionId = await publishCompetition(this.buildPayload())
+        const competitionId = await publishTeacherCompetition(session.userId, this.buildPayload())
         this.setData({
           success: `比赛发布成功，编号 #${competitionId}`
         })
@@ -230,6 +230,7 @@ Page({
   },
 
   async submitDraft() {
+    const session = getSession()
     const validationMessage = this.validateForm()
     if (validationMessage) {
       this.setData({ error: validationMessage, success: '' })
@@ -243,11 +244,22 @@ Page({
     })
 
     try {
-      const competitionId = await saveCompetitionDraft(this.buildPayload())
-      this.setData({
-        success: `草稿保存成功，编号 #${competitionId}`
-      })
-      await this.loadCompetitions(competitionId)
+      if (this.data.selectedCompetitionId) {
+        await updateTeacherCompetition(session.userId, this.data.selectedCompetitionId, {
+          ...this.buildPayload(),
+          status: 'DRAFT'
+        })
+        this.setData({
+          success: `草稿更新成功，编号 #${this.data.selectedCompetitionId}`
+        })
+        await this.loadCompetitions(this.data.selectedCompetitionId)
+      } else {
+        const competitionId = await saveTeacherCompetitionDraft(session.userId, this.buildPayload())
+        this.setData({
+          success: `草稿保存成功，编号 #${competitionId}`
+        })
+        await this.loadCompetitions(competitionId)
+      }
     } catch (error) {
       this.setData({
         error: error instanceof Error ? error.message : '保存草稿失败'
@@ -258,6 +270,7 @@ Page({
   },
 
   async submitFeature() {
+    const session = getSession()
     if (!this.data.selectedCompetitionId) {
       this.setData({ error: '请先选择一个比赛，再设置推荐和置顶', success: '' })
       return
@@ -270,7 +283,7 @@ Page({
     })
 
     try {
-      await updateCompetitionFeature(this.data.selectedCompetitionId, this.data.featureForm)
+      await updateTeacherCompetitionFeature(session.userId, this.data.selectedCompetitionId, this.data.featureForm)
       this.setData({
         success: `比赛 #${this.data.selectedCompetitionId} 的展示状态已更新`
       })
@@ -285,6 +298,7 @@ Page({
   },
 
   async submitOffline() {
+    const session = getSession()
     if (!this.data.selectedCompetitionId) {
       this.setData({ error: '请先选择一个比赛，再执行下架', success: '' })
       return
@@ -297,7 +311,7 @@ Page({
     })
 
     try {
-      await offlineCompetition(this.data.selectedCompetitionId)
+      await offlineTeacherCompetition(session.userId, this.data.selectedCompetitionId)
       this.setData({
         success: `比赛 #${this.data.selectedCompetitionId} 已下架`
       })

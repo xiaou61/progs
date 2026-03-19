@@ -10,6 +10,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.campus.competition.modules.auth.mapper.UserMapper;
 import com.campus.competition.modules.auth.persistence.UserEntity;
+import com.campus.competition.support.AuthTestSupport;
+import com.campus.competition.support.AuthTestSupport.AuthSession;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
@@ -41,80 +43,87 @@ class CompetitionManageApiTest {
   @Test
   void shouldSaveDraftUpdateFeatureAndOfflineCompetition() throws Exception {
     long teacherId = resolveTeacherId();
+    AuthSession adminSession = AuthTestSupport.login(mockMvc, objectMapper, "A20260001", "Abcd1234", "ADMIN");
     LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
 
     long competitionId = extractLongField(
-      mockMvc.perform(post("/api/admin/competitions/draft")
-          .contentType(APPLICATION_JSON)
-          .content("""
-            {
-              "organizerId": %d,
-              "title": "校园未来设计赛（草稿）",
-              "description": "草稿阶段的比赛描述",
-              "signupStartAt": "%s",
-              "signupEndAt": "%s",
-              "startAt": "%s",
-              "endAt": "%s",
-              "quota": 80
-            }
-            """.formatted(
-            teacherId,
-            now.plusDays(1),
-            now.plusDays(3),
-            now.plusDays(4),
-            now.plusDays(5))))
+      mockMvc.perform(AuthTestSupport.authorized(
+          post("/api/admin/competitions/draft")
+            .contentType(APPLICATION_JSON)
+            .content("""
+              {
+                "organizerId": %d,
+                "title": "校园未来设计赛（草稿）",
+                "description": "草稿阶段的比赛描述",
+                "signupStartAt": "%s",
+                "signupEndAt": "%s",
+                "startAt": "%s",
+                "endAt": "%s",
+                "quota": 80
+              }
+              """.formatted(
+              teacherId,
+              now.plusDays(1),
+              now.plusDays(3),
+              now.plusDays(4),
+              now.plusDays(5))),
+          adminSession))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.code").value(0))
         .andReturn(),
       "competitionId"
     );
 
-    mockMvc.perform(get("/api/admin/competitions"))
+    mockMvc.perform(AuthTestSupport.authorized(get("/api/admin/competitions"), adminSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.code").value(0))
       .andExpect(jsonPath("$.data[0].id").value(competitionId))
       .andExpect(jsonPath("$.data[0].status").value("DRAFT"));
 
-    mockMvc.perform(put("/api/admin/competitions/" + competitionId)
-        .contentType(APPLICATION_JSON)
-        .content("""
-          {
-            "organizerId": %d,
-            "title": "校园未来设计赛",
-            "description": "更新后的比赛描述",
-            "signupStartAt": "%s",
-            "signupEndAt": "%s",
-            "startAt": "%s",
-            "endAt": "%s",
-            "quota": 120,
-            "status": "PUBLISHED"
-          }
-          """.formatted(
-          teacherId,
-          now.minusDays(1),
-          now.plusDays(1),
-          now.plusDays(2),
-          now.plusDays(3))))
+    mockMvc.perform(AuthTestSupport.authorized(
+        put("/api/admin/competitions/" + competitionId)
+          .contentType(APPLICATION_JSON)
+          .content("""
+            {
+              "organizerId": %d,
+              "title": "校园未来设计赛",
+              "description": "更新后的比赛描述",
+              "signupStartAt": "%s",
+              "signupEndAt": "%s",
+              "startAt": "%s",
+              "endAt": "%s",
+              "quota": 120,
+              "status": "PUBLISHED"
+            }
+            """.formatted(
+            teacherId,
+            now.minusDays(1),
+            now.plusDays(1),
+            now.plusDays(2),
+            now.plusDays(3))),
+        adminSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.code").value(0))
       .andExpect(jsonPath("$.data.id").value(competitionId))
       .andExpect(jsonPath("$.data.title").value("校园未来设计赛"))
       .andExpect(jsonPath("$.data.status").value("PUBLISHED"));
 
-    mockMvc.perform(post("/api/admin/competitions/" + competitionId + "/feature")
-        .contentType(APPLICATION_JSON)
-        .content("""
-          {
-            "recommended": true,
-            "pinned": true
-          }
-          """))
+    mockMvc.perform(AuthTestSupport.authorized(
+        post("/api/admin/competitions/" + competitionId + "/feature")
+          .contentType(APPLICATION_JSON)
+          .content("""
+            {
+              "recommended": true,
+              "pinned": true
+            }
+            """),
+        adminSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.code").value(0))
       .andExpect(jsonPath("$.data.recommended").value(true))
       .andExpect(jsonPath("$.data.pinned").value(true));
 
-    mockMvc.perform(get("/api/admin/competitions"))
+    mockMvc.perform(AuthTestSupport.authorized(get("/api/admin/competitions"), adminSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.data[0].recommended").value(true))
       .andExpect(jsonPath("$.data[0].pinned").value(true));
@@ -124,12 +133,12 @@ class CompetitionManageApiTest {
       .andExpect(jsonPath("$.data[0].id").value(competitionId))
       .andExpect(jsonPath("$.data[0].status").value("PUBLISHED"));
 
-    mockMvc.perform(post("/api/admin/competitions/" + competitionId + "/offline"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.code").value(0))
-        .andExpect(jsonPath("$.data.offline").value(true));
+    mockMvc.perform(AuthTestSupport.authorized(post("/api/admin/competitions/" + competitionId + "/offline"), adminSession))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.code").value(0))
+      .andExpect(jsonPath("$.data.offline").value(true));
 
-    mockMvc.perform(get("/api/admin/competitions"))
+    mockMvc.perform(AuthTestSupport.authorized(get("/api/admin/competitions"), adminSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.data[0].status").value("OFFLINE"));
 

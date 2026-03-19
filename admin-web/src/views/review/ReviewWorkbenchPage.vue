@@ -4,6 +4,7 @@ import {
   fetchManagedCompetitions,
   type CompetitionManageItem
 } from '@/api/competition-manage'
+import { fetchUsers, type UserItem } from '@/api/users'
 import {
   fetchCompetitionScores,
   fetchReviewTasks,
@@ -18,6 +19,7 @@ import { validatePublishResultForm } from '@/utils/score-publish-form'
 const sessionStore = useAdminSessionStore()
 const defaultReviewerName = sessionStore.displayName.trim()
 const competitions = ref<CompetitionManageItem[]>([])
+const users = ref<UserItem[]>([])
 const selectedCompetitionId = ref(0)
 const competitionLoading = ref(false)
 const loading = ref(false)
@@ -56,6 +58,11 @@ const taskOptions = computed(() =>
   }))
 )
 
+function organizerText(organizerId: number) {
+  const matched = users.value.find((user) => user.id === organizerId)
+  return matched ? `${matched.realName} · ${matched.studentNo}` : '发起人信息待补充'
+}
+
 function resetForms() {
   reviewForm.submissionId = 0
   reviewForm.studentId = 0
@@ -75,7 +82,9 @@ async function loadCompetitions(preferId?: number) {
   competitionLoading.value = true
   error.value = ''
   try {
-    competitions.value = await fetchManagedCompetitions()
+    const [nextCompetitions, nextUsers] = await Promise.all([fetchManagedCompetitions(), fetchUsers()])
+    competitions.value = nextCompetitions
+    users.value = nextUsers
     const nextCompetitionId = preferId || selectedCompetitionId.value || competitions.value[0]?.id || 0
     selectedCompetitionId.value = nextCompetitionId
     if (!nextCompetitionId) {
@@ -287,7 +296,7 @@ onMounted(() => {
       </button>
     </section>
     <p v-if="selectedCompetition" class="toolbar-hint">
-      {{ selectedCompetition.title }} · {{ selectedCompetition.status }} · 发起人 #{{ selectedCompetition.organizerId }}
+      {{ selectedCompetition.title }} · {{ selectedCompetition.status }} · {{ organizerText(selectedCompetition.organizerId) }}
     </p>
     <p v-else-if="!competitionLoading" class="toolbar-hint">当前没有可评审的比赛，请先完成比赛发布。</p>
 
