@@ -7,6 +7,8 @@ import com.campus.competition.modules.auth.model.LoginResult;
 import com.campus.competition.modules.auth.model.RegisterCommand;
 import com.campus.competition.modules.auth.model.UserSummary;
 import com.campus.competition.modules.auth.persistence.UserEntity;
+import com.campus.competition.modules.auth.security.AuthTokenService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -23,14 +25,17 @@ public class AuthService {
   private final Map<String, AuthUser> usersByStudentNo = new ConcurrentHashMap<>();
   private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
   private final UserMapper userMapper;
+  private final AuthTokenService authTokenService;
 
   public AuthService() {
     this.userMapper = null;
+    this.authTokenService = new AuthTokenService(new ObjectMapper(), "", 43200);
   }
 
   @Autowired
-  public AuthService(UserMapper userMapper) {
+  public AuthService(UserMapper userMapper, AuthTokenService authTokenService) {
     this.userMapper = userMapper;
+    this.authTokenService = authTokenService;
   }
 
   public Long register(RegisterCommand command) {
@@ -70,7 +75,13 @@ public class AuthService {
     if (!passwordEncoder.matches(command.password(), authUser.passwordHash())) {
       throw new IllegalArgumentException("密码错误");
     }
-    return new LoginResult(authUser.id(), authUser.roleCode(), "dev-token-" + authUser.id());
+    return new LoginResult(
+      authUser.id(),
+      authUser.roleCode(),
+      authTokenService.issueToken(authUser.id(), authUser.studentNo(), authUser.roleCode()),
+      authUser.studentNo(),
+      authUser.realName()
+    );
   }
 
   public List<UserSummary> listUsers() {
@@ -150,7 +161,13 @@ public class AuthService {
     if (!passwordEncoder.matches(command.password(), user.getPasswordHash())) {
       throw new IllegalArgumentException("密码错误");
     }
-    return new LoginResult(user.getId(), user.getRoleCode(), "dev-token-" + user.getId());
+    return new LoginResult(
+      user.getId(),
+      user.getRoleCode(),
+      authTokenService.issueToken(user.getId(), user.getStudentNo(), user.getRoleCode()),
+      user.getStudentNo(),
+      user.getRealName()
+    );
   }
 
   private record AuthUser(

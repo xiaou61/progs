@@ -47,8 +47,8 @@ async function submitLogin() {
       token: result.token,
       userId: result.userId,
       roleCode: 'ADMIN',
-      studentNo: form.studentNo.trim(),
-      displayName: form.studentNo.trim()
+      studentNo: result.studentNo,
+      displayName: result.realName
     })
 
     await router.replace(redirectTarget.value)

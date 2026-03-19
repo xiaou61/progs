@@ -1,5 +1,6 @@
 package com.campus.competition.modules.message.controller;
 
+import com.campus.competition.modules.auth.security.AuthContext;
 import com.campus.competition.modules.common.model.ApiResponse;
 import com.campus.competition.modules.message.model.ChatMessageSummary;
 import com.campus.competition.modules.message.model.ConversationClearCommand;
@@ -33,11 +34,13 @@ public class AppMessageController {
 
   @GetMapping("/system")
   public ApiResponse<List<SystemMessageSummary>> systemMessages(@RequestParam Long userId) {
+    AuthContext.requireUser(userId);
     return ApiResponse.success(messageService.listSystemMessages(userId));
   }
 
   @GetMapping("/conversations")
   public ApiResponse<List<ConversationSummary>> conversations(@RequestParam Long userId) {
+    AuthContext.requireUser(userId);
     return ApiResponse.success(messageService.listConversations(userId));
   }
 
@@ -46,6 +49,7 @@ public class AppMessageController {
     @PathVariable Long conversationId,
     @RequestBody ConversationPreferenceCommand command
   ) {
+    AuthContext.requireUser(command == null ? null : command.userId());
     return ApiResponse.success(messageService.updatePinned(conversationId, command));
   }
 
@@ -54,6 +58,7 @@ public class AppMessageController {
     @PathVariable Long conversationId,
     @RequestBody ConversationPreferenceCommand command
   ) {
+    AuthContext.requireUser(command == null ? null : command.userId());
     return ApiResponse.success(messageService.updateMuted(conversationId, command));
   }
 
@@ -62,26 +67,31 @@ public class AppMessageController {
     @PathVariable Long conversationId,
     @RequestBody ConversationClearCommand command
   ) {
+    AuthContext.requireUser(command == null ? null : command.userId());
     return ApiResponse.success(messageService.clearConversation(conversationId, command));
   }
 
   @PostMapping("/consult")
   public ApiResponse<ConsultConversationSummary> consult(@RequestBody ConsultTeacherCommand command) {
+    AuthContext.requireUser(command == null ? null : command.userId());
     return ApiResponse.success(messageService.consultTeacher(command));
   }
 
   @PostMapping("/private")
   public ApiResponse<Map<String, Long>> sendPrivate(@RequestBody SendPrivateMessageCommand command) {
+    AuthContext.requireUser(command == null ? null : command.senderUserId());
     return ApiResponse.success(Map.of("messageId", messageService.sendPrivate(command)));
   }
 
   @GetMapping("/private")
   public ApiResponse<List<ChatMessageSummary>> privateMessages(@RequestParam Long userId, @RequestParam Long peerUserId) {
+    AuthContext.requireUser(userId);
     return ApiResponse.success(messageService.listPrivateMessages(userId, peerUserId));
   }
 
   @PostMapping("/group")
   public ApiResponse<Map<String, Long>> sendGroup(@RequestBody SendGroupMessageCommand command) {
+    AuthContext.requireUser(command == null ? null : command.senderUserId());
     return ApiResponse.success(Map.of("messageId", messageService.sendGroup(command)));
   }
 
@@ -90,6 +100,7 @@ public class AppMessageController {
     @PathVariable Long competitionId,
     @RequestParam Long userId
   ) {
+    AuthContext.requireUser(userId);
     return ApiResponse.success(messageService.listGroupMessages(competitionId, userId));
   }
 }

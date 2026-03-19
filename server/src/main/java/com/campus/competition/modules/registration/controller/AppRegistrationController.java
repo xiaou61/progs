@@ -1,5 +1,6 @@
 package com.campus.competition.modules.registration.controller;
 
+import com.campus.competition.modules.auth.security.AuthContext;
 import com.campus.competition.modules.common.model.ApiResponse;
 import com.campus.competition.modules.registration.model.CancelRegistrationCommand;
 import com.campus.competition.modules.registration.model.RegisterCompetitionCommand;
@@ -26,6 +27,7 @@ public class AppRegistrationController {
 
   @PostMapping
   public ApiResponse<Map<String, Long>> register(@RequestBody RegisterCompetitionCommand command) {
+    AuthContext.requireUser(command == null ? null : command.userId());
     Long registrationId = registrationService.register(command);
     return ApiResponse.success(Map.of("registrationId", registrationId));
   }
@@ -40,6 +42,7 @@ public class AppRegistrationController {
     @PathVariable Long competitionId,
     @PathVariable Long userId
   ) {
+    AuthContext.requireUser(userId);
     return ApiResponse.success(registrationService.findByCompetitionAndUser(competitionId, userId));
   }
 
@@ -48,6 +51,7 @@ public class AppRegistrationController {
     @PathVariable Long registrationId,
     @RequestBody CancelRegistrationCommand command
   ) {
+    AuthContext.requireUser(command == null ? null : command.userId());
     return ApiResponse.success(Map.of("cancelled", registrationService.cancel(registrationId, command)));
   }
 }

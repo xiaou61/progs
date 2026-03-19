@@ -1,5 +1,6 @@
 package com.campus.competition.modules.dashboard.controller;
 
+import com.campus.competition.modules.auth.security.AuthContext;
 import com.campus.competition.modules.common.model.ApiResponse;
 import com.campus.competition.modules.dashboard.model.TeacherDashboardSummary;
 import com.campus.competition.modules.dashboard.service.DashboardService;
@@ -24,11 +25,13 @@ public class AppTeacherDashboardController {
 
   @GetMapping("/teachers/{teacherId}")
   public ApiResponse<TeacherDashboardSummary> teacherOverview(@PathVariable Long teacherId) {
+    AuthContext.requireTeacher(teacherId);
     return ApiResponse.success(dashboardService.getTeacherDashboardSummary(teacherId));
   }
 
   @GetMapping(value = "/teachers/{teacherId}/export", produces = "text/csv;charset=UTF-8")
   public ResponseEntity<String> export(@PathVariable Long teacherId) {
+    AuthContext.requireTeacher(teacherId);
     return ResponseEntity.ok()
       .contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
       .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename("teacher-dashboard.csv").build().toString())

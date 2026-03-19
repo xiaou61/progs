@@ -7,6 +7,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.campus.competition.support.AuthTestSupport;
+import com.campus.competition.support.AuthTestSupport.AuthSession;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,66 +22,77 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "demo-data"})
 class SystemManageApiTest {
 
   @Autowired
   private MockMvc mockMvc;
 
   @Autowired
+  private ObjectMapper objectMapper;
+
+  @Autowired
   private JdbcTemplate jdbcTemplate;
 
   @Test
   void shouldManageCampusBannerAndConfig() throws Exception {
-    mockMvc.perform(post("/api/admin/campuses")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content("""
-          {
-            "campusCode": "WEST",
-            "campusName": "西校区",
-            "status": "ENABLED"
-          }
-          """))
+    AuthSession adminSession = AuthTestSupport.login(mockMvc, objectMapper, "A20260001", "Abcd1234", "ADMIN");
+
+    mockMvc.perform(AuthTestSupport.authorized(
+        post("/api/admin/campuses")
+          .contentType(MediaType.APPLICATION_JSON)
+          .content("""
+            {
+              "campusCode": "WEST",
+              "campusName": "西校区",
+              "status": "ENABLED"
+            }
+            """),
+        adminSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.code").value(0))
       .andExpect(jsonPath("$.data.campusCode").value("WEST"));
 
-    mockMvc.perform(put("/api/admin/banners/1")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content("""
-          {
-            "title": "春季比赛季主视觉-更新",
-            "status": "DISABLED",
-            "jumpPath": "/pages/home/index"
-          }
-          """))
+    mockMvc.perform(AuthTestSupport.authorized(
+        put("/api/admin/banners/1")
+          .contentType(MediaType.APPLICATION_JSON)
+          .content("""
+            {
+              "title": "春季比赛季主视觉-更新",
+              "status": "DISABLED",
+              "jumpPath": "/pages/home/index"
+            }
+            """),
+        adminSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.code").value(0))
       .andExpect(jsonPath("$.data.status").value("DISABLED"));
 
-    mockMvc.perform(put("/api/admin/configs")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content("""
-          {
-            "platformName": "校园师生比赛管理平台 Pro",
-            "mvpPhase": "Phase 2",
-            "pointsEnabled": false,
-            "submissionReuploadEnabled": false
-          }
-          """))
+    mockMvc.perform(AuthTestSupport.authorized(
+        put("/api/admin/configs")
+          .contentType(MediaType.APPLICATION_JSON)
+          .content("""
+            {
+              "platformName": "校园师生比赛管理平台 Pro",
+              "mvpPhase": "Phase 2",
+              "pointsEnabled": false,
+              "submissionReuploadEnabled": false
+            }
+            """),
+        adminSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.code").value(0))
       .andExpect(jsonPath("$.data.platformName").value("校园师生比赛管理平台 Pro"));
 
-    mockMvc.perform(get("/api/admin/campuses"))
+    mockMvc.perform(AuthTestSupport.authorized(get("/api/admin/campuses"), adminSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.data[?(@.campusCode=='WEST')]").exists());
 
-    mockMvc.perform(get("/api/admin/banners"))
+    mockMvc.perform(AuthTestSupport.authorized(get("/api/admin/banners"), adminSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.data[0].jumpPath").value("/pages/home/index"));
 
-    mockMvc.perform(get("/api/admin/configs"))
+    mockMvc.perform(AuthTestSupport.authorized(get("/api/admin/configs"), adminSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.data.pointsEnabled").value(false));
 

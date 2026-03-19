@@ -1,5 +1,6 @@
 package com.campus.competition.modules.submission.controller;
 
+import com.campus.competition.modules.auth.security.AuthContext;
 import com.campus.competition.modules.common.model.ApiResponse;
 import com.campus.competition.modules.submission.model.SubmissionSummary;
 import com.campus.competition.modules.submission.model.SubmitWorkCommand;
@@ -25,6 +26,7 @@ public class AppSubmissionController {
 
   @PostMapping
   public ApiResponse<Map<String, Long>> submit(@RequestBody SubmitWorkCommand command) {
+    AuthContext.requireUser(command == null ? null : command.userId());
     return ApiResponse.success(Map.of("submissionId", submissionService.submit(command)));
   }
 

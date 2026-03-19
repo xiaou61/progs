@@ -3,6 +3,7 @@ package com.campus.competition.modules.checkin.controller;
 import com.campus.competition.modules.checkin.model.CheckInCommand;
 import com.campus.competition.modules.checkin.model.CheckinSummary;
 import com.campus.competition.modules.checkin.service.CheckinService;
+import com.campus.competition.modules.auth.security.AuthContext;
 import com.campus.competition.modules.common.model.ApiResponse;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,7 @@ public class AppCheckinController {
 
   @PostMapping
   public ApiResponse<Map<String, Boolean>> checkIn(@RequestBody CheckInCommand command) {
+    AuthContext.requireUser(command == null ? null : command.userId());
     return ApiResponse.success(Map.of("checked", checkinService.checkIn(command)));
   }
 

@@ -10,6 +10,8 @@ export type LoginResult = {
   token: string
   userId: number
   roleCode: 'STUDENT' | 'TEACHER' | 'ADMIN'
+  studentNo: string
+  realName: string
 }
 
 export async function login(payload: LoginPayload) {

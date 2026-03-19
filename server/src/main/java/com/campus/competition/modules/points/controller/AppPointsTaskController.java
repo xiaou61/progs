@@ -1,5 +1,6 @@
 package com.campus.competition.modules.points.controller;
 
+import com.campus.competition.modules.auth.security.AuthContext;
 import com.campus.competition.modules.common.model.ApiResponse;
 import com.campus.competition.modules.competition.service.CompetitionService;
 import com.campus.competition.modules.points.model.DailyCheckinCommand;
@@ -47,6 +48,7 @@ public class AppPointsTaskController {
 
   @GetMapping("/{userId}")
   public ApiResponse<Map<String, Object>> overview(@PathVariable Long userId) {
+    AuthContext.requireUser(userId);
     return ApiResponse.success(Map.of(
       "task", pointsService.getDailyTaskSummary(userId),
       "overview", buildOverview(userId)
@@ -55,6 +57,7 @@ public class AppPointsTaskController {
 
   @PostMapping("/checkin")
   public ApiResponse<Map<String, Object>> checkin(@RequestBody DailyCheckinCommand command) {
+    AuthContext.requireUser(command == null ? null : command.userId());
     int availablePoints = pointsService.completeDailyCheckin(command.userId());
     return ApiResponse.success(Map.of(
       "granted", true,
@@ -65,6 +68,7 @@ public class AppPointsTaskController {
 
   @PostMapping("/share")
   public ApiResponse<Map<String, Object>> share(@RequestBody ShareCompetitionCommand command) {
+    AuthContext.requireUser(command == null ? null : command.userId());
     competitionService.getCompetition(command.competitionId());
     int availablePoints = pointsService.completeCompetitionShare(command.userId(), command.competitionId());
     return ApiResponse.success(Map.of(

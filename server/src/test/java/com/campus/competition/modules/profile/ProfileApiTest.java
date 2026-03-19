@@ -11,6 +11,9 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.campus.competition.modules.auth.mapper.UserMapper;
 import com.campus.competition.modules.auth.persistence.UserEntity;
 import com.campus.competition.modules.profile.mapper.FeedbackMapper;
+import com.campus.competition.support.AuthTestSupport;
+import com.campus.competition.support.AuthTestSupport.AuthSession;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -34,37 +37,45 @@ class ProfileApiTest {
   @Autowired
   private FeedbackMapper feedbackMapper;
 
+  @Autowired
+  private ObjectMapper objectMapper;
+
   @Test
   void shouldQueryUpdatePasswordFeedbackAndCancelProfile() throws Exception {
     Long studentId = resolveStudentId();
+    AuthSession studentSession = AuthTestSupport.login(mockMvc, objectMapper, "S20260001", "Abcd1234", "STUDENT");
 
-    mockMvc.perform(get("/api/app/profile")
-        .param("userId", String.valueOf(studentId)))
+    mockMvc.perform(AuthTestSupport.authorized(
+        get("/api/app/profile")
+          .param("userId", String.valueOf(studentId)),
+        studentSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.code").value(0))
       .andExpect(jsonPath("$.data.studentNo").value("S20260001"))
       .andExpect(jsonPath("$.data.realName").value("张同学"));
 
-    mockMvc.perform(put("/api/app/profile")
-        .contentType(APPLICATION_JSON)
-        .content("""
-          {
-            "userId": %d,
-            "realName": "软件工程 2 班学生",
-            "phone": "13900000002",
-            "avatarUrl": "https://example.com/avatar-student.png",
-            "gradeName": "2026级",
-            "majorName": "软件工程",
-            "departmentName": "",
-            "bio": "专注校园创新比赛",
-            "notifyResult": false,
-            "notifyPoints": true,
-            "allowPrivateMessage": false,
-            "publicCompetition": true,
-            "publicPoints": false,
-            "publicSubmission": false
-          }
-          """.formatted(studentId)))
+    mockMvc.perform(AuthTestSupport.authorized(
+        put("/api/app/profile")
+          .contentType(APPLICATION_JSON)
+          .content("""
+            {
+              "userId": %d,
+              "realName": "软件工程 2 班学生",
+              "phone": "13900000002",
+              "avatarUrl": "https://example.com/avatar-student.png",
+              "gradeName": "2026级",
+              "majorName": "软件工程",
+              "departmentName": "",
+              "bio": "专注校园创新比赛",
+              "notifyResult": false,
+              "notifyPoints": true,
+              "allowPrivateMessage": false,
+              "publicCompetition": true,
+              "publicPoints": false,
+              "publicSubmission": false
+            }
+            """.formatted(studentId)),
+        studentSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.code").value(0))
       .andExpect(jsonPath("$.data.realName").value("软件工程 2 班学生"))
@@ -72,15 +83,17 @@ class ProfileApiTest {
       .andExpect(jsonPath("$.data.notifyResult").value(false))
       .andExpect(jsonPath("$.data.allowPrivateMessage").value(false));
 
-    mockMvc.perform(post("/api/app/profile/password")
-        .contentType(APPLICATION_JSON)
-        .content("""
-          {
-            "userId": %d,
-            "oldPassword": "Abcd1234",
-            "newPassword": "Abcd5678"
-          }
-          """.formatted(studentId)))
+    mockMvc.perform(AuthTestSupport.authorized(
+        post("/api/app/profile/password")
+          .contentType(APPLICATION_JSON)
+          .content("""
+            {
+              "userId": %d,
+              "oldPassword": "Abcd1234",
+              "newPassword": "Abcd5678"
+            }
+            """.formatted(studentId)),
+        studentSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.code").value(0));
 
@@ -97,30 +110,34 @@ class ProfileApiTest {
       .andExpect(jsonPath("$.code").value(0))
       .andExpect(jsonPath("$.data.userId").value(studentId));
 
-    mockMvc.perform(post("/api/app/profile/feedback")
-        .contentType(APPLICATION_JSON)
-        .content("""
-          {
-            "userId": %d,
-            "content": "希望个人中心支持更多作品筛选能力",
-            "imageUrls": [
-              "https://example.com/feedback-1.png"
-            ]
-          }
-          """.formatted(studentId)))
+    mockMvc.perform(AuthTestSupport.authorized(
+        post("/api/app/profile/feedback")
+          .contentType(APPLICATION_JSON)
+          .content("""
+            {
+              "userId": %d,
+              "content": "希望个人中心支持更多作品筛选能力",
+              "imageUrls": [
+                "https://example.com/feedback-1.png"
+              ]
+            }
+            """.formatted(studentId)),
+        studentSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.code").value(0));
 
     org.junit.jupiter.api.Assertions.assertEquals(1L, feedbackMapper.selectCount(null));
 
-    mockMvc.perform(post("/api/app/profile/cancel")
-        .contentType(APPLICATION_JSON)
-        .content("""
-          {
-            "userId": %d,
-            "confirmText": "确认注销"
-          }
-          """.formatted(studentId)))
+    mockMvc.perform(AuthTestSupport.authorized(
+        post("/api/app/profile/cancel")
+          .contentType(APPLICATION_JSON)
+          .content("""
+            {
+              "userId": %d,
+              "confirmText": "确认注销"
+            }
+            """.formatted(studentId)),
+        studentSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.code").value(0));
 

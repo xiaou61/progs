@@ -1,5 +1,6 @@
 package com.campus.competition.modules.profile.controller;
 
+import com.campus.competition.modules.auth.security.AuthContext;
 import com.campus.competition.modules.common.model.ApiResponse;
 import com.campus.competition.modules.profile.model.CancelAccountCommand;
 import com.campus.competition.modules.profile.model.ChangePasswordCommand;
@@ -28,26 +29,31 @@ public class AppProfileController {
 
   @GetMapping
   public ApiResponse<ProfileSummary> getProfile(@RequestParam Long userId) {
+    AuthContext.requireUser(userId);
     return ApiResponse.success(profileService.getProfile(userId));
   }
 
   @PutMapping
   public ApiResponse<ProfileSummary> updateProfile(@RequestBody UpdateProfileCommand command) {
+    AuthContext.requireUser(command == null ? null : command.userId());
     return ApiResponse.success(profileService.updateProfile(command));
   }
 
   @PostMapping("/password")
   public ApiResponse<Map<String, Boolean>> changePassword(@RequestBody ChangePasswordCommand command) {
+    AuthContext.requireUser(command == null ? null : command.userId());
     return ApiResponse.success(Map.of("changed", profileService.changePassword(command)));
   }
 
   @PostMapping("/feedback")
   public ApiResponse<Map<String, Long>> submitFeedback(@RequestBody FeedbackCommand command) {
+    AuthContext.requireUser(command == null ? null : command.userId());
     return ApiResponse.success(Map.of("feedbackId", profileService.submitFeedback(command)));
   }
 
   @PostMapping("/cancel")
   public ApiResponse<Map<String, Boolean>> cancelAccount(@RequestBody CancelAccountCommand command) {
+    AuthContext.requireUser(command == null ? null : command.userId());
     return ApiResponse.success(Map.of("cancelled", profileService.cancelAccount(command)));
   }
 }

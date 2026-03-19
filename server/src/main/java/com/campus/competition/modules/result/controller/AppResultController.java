@@ -1,5 +1,6 @@
 package com.campus.competition.modules.result.controller;
 
+import com.campus.competition.modules.auth.security.AuthContext;
 import com.campus.competition.modules.common.model.ApiResponse;
 import com.campus.competition.modules.points.model.PointsAccountSummary;
 import com.campus.competition.modules.points.model.PointsRecordSummary;
@@ -33,6 +34,7 @@ public class AppResultController {
 
   @GetMapping("/student/{studentId}")
   public ApiResponse<Map<String, Object>> studentOverview(@PathVariable Long studentId) {
+    AuthContext.requireUser(studentId);
     PointsAccountSummary account = pointsService.getAccount(studentId);
     List<ScoreSummary> results = scoreService.listByStudent(studentId);
     List<PointsRecordSummary> records = pointsService.listRecords(studentId);
@@ -45,6 +47,7 @@ public class AppResultController {
 
   @GetMapping("/points")
   public ApiResponse<PointsAccountSummary> points(@RequestParam Long userId) {
+    AuthContext.requireUser(userId);
     return ApiResponse.success(pointsService.getAccount(userId));
   }
 }

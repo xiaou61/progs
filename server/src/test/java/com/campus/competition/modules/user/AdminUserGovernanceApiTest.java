@@ -7,6 +7,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.campus.competition.support.AuthTestSupport;
+import com.campus.competition.support.AuthTestSupport.AuthSession;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -32,51 +34,59 @@ class AdminUserGovernanceApiTest {
 
   @Test
   void shouldManageRolesAndGovernUsers() throws Exception {
-    mockMvc.perform(get("/api/admin/roles"))
+    AuthSession adminSession = AuthTestSupport.login(mockMvc, objectMapper, "A20260001", "Abcd1234", "ADMIN");
+
+    mockMvc.perform(AuthTestSupport.authorized(get("/api/admin/roles"), adminSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.code").value(0))
       .andExpect(jsonPath("$.data[0].roleCode").value("STUDENT"));
 
-    mockMvc.perform(post("/api/admin/roles")
-        .contentType(APPLICATION_JSON)
-        .content("""
-          {
-            "roleCode": "JUDGE",
-            "roleName": "评委",
-            "description": "负责评审作品与发布结果",
-            "permissionCodes": ["REVIEW_MANAGE", "SCORE_PUBLISH"]
-          }
-          """))
+    mockMvc.perform(AuthTestSupport.authorized(
+        post("/api/admin/roles")
+          .contentType(APPLICATION_JSON)
+          .content("""
+            {
+              "roleCode": "JUDGE",
+              "roleName": "评委",
+              "description": "负责评审作品与发布结果",
+              "permissionCodes": ["REVIEW_MANAGE", "SCORE_PUBLISH"]
+            }
+            """),
+        adminSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.code").value(0))
       .andExpect(jsonPath("$.data.roleCode").value("JUDGE"))
       .andExpect(jsonPath("$.data.permissionCodes[0]").value("REVIEW_MANAGE"));
 
-    mockMvc.perform(put("/api/admin/roles/JUDGE")
-        .contentType(APPLICATION_JSON)
-        .content("""
-          {
-            "roleName": "赛事评委",
-            "description": "负责评审作品、录入评语和协助发布结果",
-            "permissionCodes": ["REVIEW_MANAGE", "SCORE_PUBLISH", "RESULT_VIEW"]
-          }
-          """))
+    mockMvc.perform(AuthTestSupport.authorized(
+        put("/api/admin/roles/JUDGE")
+          .contentType(APPLICATION_JSON)
+          .content("""
+            {
+              "roleName": "赛事评委",
+              "description": "负责评审作品、录入评语和协助发布结果",
+              "permissionCodes": ["REVIEW_MANAGE", "SCORE_PUBLISH", "RESULT_VIEW"]
+            }
+            """),
+        adminSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.code").value(0))
       .andExpect(jsonPath("$.data.roleName").value("赛事评委"))
       .andExpect(jsonPath("$.data.permissionCodes[2]").value("RESULT_VIEW"));
 
-    mockMvc.perform(post("/api/admin/users")
-        .contentType(APPLICATION_JSON)
-        .content("""
-          {
-            "studentNo": "S20260101",
-            "realName": "新建学生",
-            "phone": "13800000101",
-            "roleCode": "STUDENT",
-            "password": "Abcd5678"
-          }
-          """))
+    mockMvc.perform(AuthTestSupport.authorized(
+        post("/api/admin/users")
+          .contentType(APPLICATION_JSON)
+          .content("""
+            {
+              "studentNo": "S20260101",
+              "realName": "新建学生",
+              "phone": "13800000101",
+              "roleCode": "STUDENT",
+              "password": "Abcd5678"
+            }
+            """),
+        adminSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.code").value(0))
       .andExpect(jsonPath("$.data.studentNo").value("S20260101"))
@@ -99,13 +109,15 @@ class AdminUserGovernanceApiTest {
 
     long studentId = findUserIdByStudentNo("S20260001");
 
-    mockMvc.perform(post("/api/admin/users/" + studentId + "/freeze")
-        .contentType(APPLICATION_JSON)
-        .content("""
-          {
-            "reason": "测试冻结账号"
-          }
-          """))
+    mockMvc.perform(AuthTestSupport.authorized(
+        post("/api/admin/users/" + studentId + "/freeze")
+          .contentType(APPLICATION_JSON)
+          .content("""
+            {
+              "reason": "测试冻结账号"
+            }
+            """),
+        adminSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.code").value(0))
       .andExpect(jsonPath("$.data.updated").value(true));
@@ -123,29 +135,35 @@ class AdminUserGovernanceApiTest {
       .andExpect(jsonPath("$.code").value(400))
       .andExpect(jsonPath("$.message").value("账号已停用"));
 
-    mockMvc.perform(post("/api/admin/users/" + studentId + "/unfreeze"))
+    mockMvc.perform(AuthTestSupport.authorized(
+        post("/api/admin/users/" + studentId + "/unfreeze"),
+        adminSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.code").value(0))
       .andExpect(jsonPath("$.data.updated").value(true));
 
-    mockMvc.perform(post("/api/admin/users/" + studentId + "/reset-password")
-        .contentType(APPLICATION_JSON)
-        .content("""
-          {
-            "newPassword": "Abcd5678"
-          }
-          """))
+    mockMvc.perform(AuthTestSupport.authorized(
+        post("/api/admin/users/" + studentId + "/reset-password")
+          .contentType(APPLICATION_JSON)
+          .content("""
+            {
+              "newPassword": "Abcd5678"
+            }
+            """),
+        adminSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.code").value(0))
       .andExpect(jsonPath("$.data.updated").value(true));
 
-    mockMvc.perform(post("/api/admin/users/" + studentId + "/role")
-        .contentType(APPLICATION_JSON)
-        .content("""
-          {
-            "roleCode": "JUDGE"
-          }
-          """))
+    mockMvc.perform(AuthTestSupport.authorized(
+        post("/api/admin/users/" + studentId + "/role")
+          .contentType(APPLICATION_JSON)
+          .content("""
+            {
+              "roleCode": "JUDGE"
+            }
+            """),
+        adminSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.code").value(0))
       .andExpect(jsonPath("$.data.roleCode").value("JUDGE"));
@@ -163,7 +181,7 @@ class AdminUserGovernanceApiTest {
       .andExpect(jsonPath("$.code").value(0))
       .andExpect(jsonPath("$.data.roleCode").value("JUDGE"));
 
-    mockMvc.perform(get("/api/admin/users"))
+    mockMvc.perform(AuthTestSupport.authorized(get("/api/admin/users"), adminSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.code").value(0))
       .andExpect(jsonPath("$.data[?(@.studentNo=='S20260001')].roleCode").value("JUDGE"))
@@ -171,7 +189,8 @@ class AdminUserGovernanceApiTest {
   }
 
   private long findUserIdByStudentNo(String studentNo) throws Exception {
-    MvcResult result = mockMvc.perform(get("/api/admin/users"))
+    AuthSession adminSession = AuthTestSupport.login(mockMvc, objectMapper, "A20260001", "Abcd1234", "ADMIN");
+    MvcResult result = mockMvc.perform(AuthTestSupport.authorized(get("/api/admin/users"), adminSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.code").value(0))
       .andReturn();
