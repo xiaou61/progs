@@ -1,4 +1,4 @@
-const { fetchCompetitions } = require('../../../services/competition')
+const { fetchCompetitionDetail } = require('../../../services/competition')
 const {
   cancelRegistration,
   fetchUserRegistration,
@@ -48,11 +48,43 @@ function resolveAccountLabel(session) {
   return `用户 ${session.userId}`
 }
 
+function resolveParticipantTypeLabel(participantType) {
+  return participantType === 'TEACHER_ONLY' ? '仅老师参加' : '仅学生参加'
+}
+
+function resolveRegisterPermission(roleCode, competition) {
+  if (!competition) {
+    return {
+      canRegister: false,
+      hint: '比赛信息加载中，请稍后重试'
+    }
+  }
+  if (competition.participantType === 'TEACHER_ONLY' && roleCode !== 'TEACHER') {
+    return {
+      canRegister: false,
+      hint: '当前比赛仅限老师报名'
+    }
+  }
+  if (competition.participantType === 'STUDENT_ONLY' && roleCode !== 'STUDENT') {
+    return {
+      canRegister: false,
+      hint: '当前比赛仅限学生报名'
+    }
+  }
+  return {
+    canRegister: true,
+    hint: ''
+  }
+}
+
 Page({
   data: {
     competitionId: 0,
     competitionTitle: '未选择比赛',
     competitionDesc: '请从比赛列表进入后再完成报名。',
+    participantType: 'STUDENT_ONLY',
+    participantTypeLabel: '仅学生参加',
+    advisorTeacherName: '',
     loading: false,
     submitting: false,
     error: '',
@@ -63,7 +95,9 @@ Page({
     registration: null,
     statusText: '未报名',
     attendanceText: '待签到',
-    hasActiveRegistration: false
+    hasActiveRegistration: false,
+    canRegister: false,
+    registerHint: '比赛信息加载中，请稍后重试'
   },
 
   onLoad(options) {
@@ -104,14 +138,17 @@ Page({
     })
 
     try {
-      const competitions = await fetchCompetitions()
-      const current = competitions.find((item) => item.id === this.data.competitionId)
-      if (current) {
-        this.setData({
-          competitionTitle: current.title,
-          competitionDesc: current.description
-        })
-      }
+      const current = await fetchCompetitionDetail(this.data.competitionId)
+      const permission = resolveRegisterPermission(this.data.roleCode, current)
+      this.setData({
+        competitionTitle: current.title,
+        competitionDesc: current.description,
+        participantType: current.participantType || 'STUDENT_ONLY',
+        participantTypeLabel: resolveParticipantTypeLabel(current.participantType),
+        advisorTeacherName: current.advisorTeacherName || '',
+        canRegister: permission.canRegister,
+        registerHint: permission.hint
+      })
     } catch (error) {
       this.setData({
         error: error instanceof Error ? error.message : '加载比赛信息失败'
@@ -139,6 +176,13 @@ Page({
   },
 
   async submitRegistration() {
+    if (!this.data.canRegister) {
+      this.setData({
+        error: this.data.registerHint,
+        success: ''
+      })
+      return
+    }
     const session = getSession()
     this.setData({
       submitting: true,

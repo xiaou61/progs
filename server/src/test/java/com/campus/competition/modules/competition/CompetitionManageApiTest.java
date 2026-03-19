@@ -59,14 +59,17 @@ class CompetitionManageApiTest {
                 "signupEndAt": "%s",
                 "startAt": "%s",
                 "endAt": "%s",
-                "quota": 80
+                "quota": 80,
+                "participantType": "STUDENT_ONLY",
+                "advisorTeacherId": %d
               }
               """.formatted(
               teacherId,
               now.plusDays(1),
               now.plusDays(3),
               now.plusDays(4),
-              now.plusDays(5))),
+              now.plusDays(5),
+              teacherId)),
           adminSession))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.code").value(0))
@@ -93,14 +96,17 @@ class CompetitionManageApiTest {
               "startAt": "%s",
               "endAt": "%s",
               "quota": 120,
-              "status": "PUBLISHED"
+              "status": "PUBLISHED",
+              "participantType": "STUDENT_ONLY",
+              "advisorTeacherId": %d
             }
             """.formatted(
             teacherId,
             now.minusDays(1),
             now.plusDays(1),
             now.plusDays(2),
-            now.plusDays(3))),
+            now.plusDays(3),
+            teacherId)),
         adminSession))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.code").value(0))

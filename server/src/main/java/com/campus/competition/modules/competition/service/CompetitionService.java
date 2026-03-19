@@ -1,6 +1,8 @@
 package com.campus.competition.modules.competition.service;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.campus.competition.modules.auth.mapper.UserMapper;
+import com.campus.competition.modules.auth.persistence.UserEntity;
 import com.campus.competition.modules.auth.security.ForbiddenException;
 import com.campus.competition.modules.audit.service.ContentAuditService;
 import com.campus.competition.modules.competition.mapper.CompetitionMapper;
@@ -24,11 +26,16 @@ import org.springframework.stereotype.Service;
 @Service
 public class CompetitionService {
 
+  private static final String PARTICIPANT_TYPE_STUDENT_ONLY = "STUDENT_ONLY";
+  private static final String PARTICIPANT_TYPE_TEACHER_ONLY = "TEACHER_ONLY";
+
   private final AtomicLong idGenerator = new AtomicLong(1);
   private final Map<Long, CompetitionDetail> competitions = new ConcurrentHashMap<>();
   private final CompetitionMapper competitionMapper;
   @Autowired(required = false)
   private ContentAuditService contentAuditService;
+  @Autowired(required = false)
+  private UserMapper userMapper;
 
   public CompetitionService() {
     this.competitionMapper = null;
@@ -40,6 +47,11 @@ public class CompetitionService {
   }
 
   public Long publish(PublishCompetitionCommand command) {
+    CompetitionParticipantSettings settings = resolveParticipantSettingsForCreate(
+      command.organizerId(),
+      command.participantType(),
+      command.advisorTeacherId()
+    );
     validateCommand(
       command.organizerId(),
       command.title(),
@@ -52,13 +64,15 @@ public class CompetitionService {
     );
     if (competitionMapper != null) {
       CompetitionEntity entity = buildEntity(command.organizerId(), command.title(), command.description(),
-        command.signupStartAt(), command.signupEndAt(), command.startAt(), command.endAt(), command.quota(), "PUBLISHED");
+        command.signupStartAt(), command.signupEndAt(), command.startAt(), command.endAt(), command.quota(), "PUBLISHED",
+        settings.participantType(), settings.advisorTeacherId());
       competitionMapper.insert(entity);
       return entity.getId();
     }
     long id = idGenerator.getAndIncrement();
     CompetitionDetail detail = buildDetail(id, command.organizerId(), command.title(), command.description(),
-      command.signupStartAt(), command.signupEndAt(), command.startAt(), command.endAt(), command.quota(), "PUBLISHED", false, false);
+      command.signupStartAt(), command.signupEndAt(), command.startAt(), command.endAt(), command.quota(), "PUBLISHED",
+      false, false, settings.participantType(), settings.advisorTeacherId(), settings.advisorTeacherName());
     competitions.put(id, detail);
     return id;
   }
@@ -112,6 +126,11 @@ public class CompetitionService {
   }
 
   public Long saveDraft(SaveCompetitionDraftCommand command) {
+    CompetitionParticipantSettings settings = resolveParticipantSettingsForCreate(
+      command.organizerId(),
+      command.participantType(),
+      command.advisorTeacherId()
+    );
     validateCommand(
       command.organizerId(),
       command.title(),
@@ -124,13 +143,15 @@ public class CompetitionService {
     );
     if (competitionMapper != null) {
       CompetitionEntity entity = buildEntity(command.organizerId(), command.title(), command.description(),
-        command.signupStartAt(), command.signupEndAt(), command.startAt(), command.endAt(), command.quota(), "DRAFT");
+        command.signupStartAt(), command.signupEndAt(), command.startAt(), command.endAt(), command.quota(), "DRAFT",
+        settings.participantType(), settings.advisorTeacherId());
       competitionMapper.insert(entity);
       return entity.getId();
     }
     long id = idGenerator.getAndIncrement();
     CompetitionDetail detail = buildDetail(id, command.organizerId(), command.title(), command.description(),
-      command.signupStartAt(), command.signupEndAt(), command.startAt(), command.endAt(), command.quota(), "DRAFT", false, false);
+      command.signupStartAt(), command.signupEndAt(), command.startAt(), command.endAt(), command.quota(), "DRAFT",
+      false, false, settings.participantType(), settings.advisorTeacherId(), settings.advisorTeacherName());
     competitions.put(id, detail);
     return id;
   }
@@ -147,7 +168,9 @@ public class CompetitionService {
       command.signupEndAt(),
       command.startAt(),
       command.endAt(),
-      command.quota()
+      command.quota(),
+      command.participantType(),
+      command.advisorTeacherId()
     ));
   }
 
@@ -163,7 +186,9 @@ public class CompetitionService {
       command.signupEndAt(),
       command.startAt(),
       command.endAt(),
-      command.quota()
+      command.quota(),
+      command.participantType(),
+      command.advisorTeacherId()
     ));
   }
 
@@ -181,6 +206,13 @@ public class CompetitionService {
     String status = normalizeStatus(command.status(), "PUBLISHED");
     if (competitionMapper != null) {
       CompetitionEntity entity = getEntity(competitionId);
+      CompetitionParticipantSettings settings = resolveParticipantSettingsForUpdate(
+        command.organizerId(),
+        command.participantType(),
+        command.advisorTeacherId(),
+        entity.getParticipantType(),
+        entity.getAdvisorTeacherId()
+      );
       entity.setOrganizerId(command.organizerId());
       entity.setTitle(command.title());
       entity.setDescription(command.description());
@@ -189,12 +221,21 @@ public class CompetitionService {
       entity.setStartAt(command.startAt());
       entity.setEndAt(command.endAt());
       entity.setQuota(command.quota());
+      entity.setParticipantType(settings.participantType());
+      entity.setAdvisorTeacherId(settings.advisorTeacherId());
       entity.setStatus(status);
       entity.setUpdatedAt(LocalDateTime.now());
       competitionMapper.updateById(entity);
       return toDetail(entity);
     }
     CompetitionDetail existing = getCompetition(competitionId);
+    CompetitionParticipantSettings settings = resolveParticipantSettingsForUpdate(
+      command.organizerId(),
+      command.participantType(),
+      command.advisorTeacherId(),
+      existing.participantType(),
+      existing.advisorTeacherId()
+    );
     CompetitionDetail updated = buildDetail(
       competitionId,
       command.organizerId(),
@@ -207,7 +248,10 @@ public class CompetitionService {
       command.quota(),
       status,
       existing.recommended(),
-      existing.pinned()
+      existing.pinned(),
+      settings.participantType(),
+      settings.advisorTeacherId(),
+      settings.advisorTeacherName()
     );
     competitions.put(competitionId, updated);
     return updated;
@@ -227,7 +271,9 @@ public class CompetitionService {
       command.startAt(),
       command.endAt(),
       command.quota(),
-      command.status()
+      command.status(),
+      command.participantType(),
+      command.advisorTeacherId()
     ));
   }
 
@@ -253,7 +299,10 @@ public class CompetitionService {
       existing.quota(),
       existing.status(),
       command.recommended() != null ? command.recommended() : existing.recommended(),
-      command.pinned() != null ? command.pinned() : existing.pinned()
+      command.pinned() != null ? command.pinned() : existing.pinned(),
+      existing.participantType(),
+      existing.advisorTeacherId(),
+      existing.advisorTeacherName()
     );
     competitions.put(competitionId, updated);
     return updated;
@@ -285,7 +334,10 @@ public class CompetitionService {
       existing.quota(),
       "OFFLINE",
       existing.recommended(),
-      existing.pinned()
+      existing.pinned(),
+      existing.participantType(),
+      existing.advisorTeacherId(),
+      existing.advisorTeacherName()
     ));
     return true;
   }
@@ -358,7 +410,10 @@ public class CompetitionService {
       detail.quota(),
       detail.status(),
       detail.recommended(),
-      detail.pinned()
+      detail.pinned(),
+      detail.participantType(),
+      detail.advisorTeacherId(),
+      detail.advisorTeacherName()
     );
   }
 
@@ -374,7 +429,10 @@ public class CompetitionService {
       entity.getQuota(),
       entity.getStatus(),
       Boolean.TRUE.equals(entity.getIsRecommended()),
-      Boolean.TRUE.equals(entity.getIsPinned())
+      Boolean.TRUE.equals(entity.getIsPinned()),
+      normalizeParticipantTypeOrDefault(entity.getParticipantType()),
+      entity.getAdvisorTeacherId(),
+      resolveAdvisorTeacherName(entity.getAdvisorTeacherId())
     );
   }
 
@@ -391,7 +449,10 @@ public class CompetitionService {
       entity.getQuota(),
       entity.getStatus(),
       Boolean.TRUE.equals(entity.getIsRecommended()),
-      Boolean.TRUE.equals(entity.getIsPinned())
+      Boolean.TRUE.equals(entity.getIsPinned()),
+      normalizeParticipantTypeOrDefault(entity.getParticipantType()),
+      entity.getAdvisorTeacherId(),
+      resolveAdvisorTeacherName(entity.getAdvisorTeacherId())
     );
   }
 
@@ -408,7 +469,10 @@ public class CompetitionService {
       entity.getQuota(),
       entity.getStatus(),
       Boolean.TRUE.equals(entity.getIsRecommended()),
-      Boolean.TRUE.equals(entity.getIsPinned())
+      Boolean.TRUE.equals(entity.getIsPinned()),
+      normalizeParticipantTypeOrDefault(entity.getParticipantType()),
+      entity.getAdvisorTeacherId(),
+      resolveAdvisorTeacherName(entity.getAdvisorTeacherId())
     );
   }
 
@@ -425,7 +489,10 @@ public class CompetitionService {
       detail.quota(),
       detail.status(),
       detail.recommended(),
-      detail.pinned()
+      detail.pinned(),
+      detail.participantType(),
+      detail.advisorTeacherId(),
+      detail.advisorTeacherName()
     );
   }
 
@@ -438,7 +505,9 @@ public class CompetitionService {
     LocalDateTime startAt,
     LocalDateTime endAt,
     Integer quota,
-    String status
+    String status,
+    String participantType,
+    Long advisorTeacherId
   ) {
     CompetitionEntity entity = new CompetitionEntity();
     entity.setOrganizerId(organizerId);
@@ -449,6 +518,8 @@ public class CompetitionService {
     entity.setStartAt(startAt);
     entity.setEndAt(endAt);
     entity.setQuota(quota);
+    entity.setParticipantType(participantType);
+    entity.setAdvisorTeacherId(advisorTeacherId);
     entity.setStatus(status);
     entity.setIsRecommended(false);
     entity.setIsPinned(false);
@@ -468,7 +539,10 @@ public class CompetitionService {
     Integer quota,
     String status,
     boolean recommended,
-    boolean pinned
+    boolean pinned,
+    String participantType,
+    Long advisorTeacherId,
+    String advisorTeacherName
   ) {
     return new CompetitionDetail(
       id,
@@ -482,8 +556,89 @@ public class CompetitionService {
       quota,
       status,
       recommended,
-      pinned
+      pinned,
+      participantType,
+      advisorTeacherId,
+      advisorTeacherName
     );
+  }
+
+  private CompetitionParticipantSettings resolveParticipantSettingsForCreate(
+    Long organizerId,
+    String participantType,
+    Long advisorTeacherId
+  ) {
+    String normalizedType = isBlank(participantType)
+      ? PARTICIPANT_TYPE_STUDENT_ONLY
+      : normalizeParticipantType(participantType);
+    Long resolvedAdvisorTeacherId = advisorTeacherId;
+    if (PARTICIPANT_TYPE_STUDENT_ONLY.equals(normalizedType) && resolvedAdvisorTeacherId == null && !hasExplicitParticipantType(participantType)) {
+      resolvedAdvisorTeacherId = organizerId;
+    }
+    return validateParticipantSettings(normalizedType, resolvedAdvisorTeacherId);
+  }
+
+  private CompetitionParticipantSettings resolveParticipantSettingsForUpdate(
+    Long organizerId,
+    String participantType,
+    Long advisorTeacherId,
+    String currentParticipantType,
+    Long currentAdvisorTeacherId
+  ) {
+    String normalizedType = isBlank(participantType)
+      ? normalizeParticipantTypeOrDefault(currentParticipantType)
+      : normalizeParticipantType(participantType);
+    Long resolvedAdvisorTeacherId = advisorTeacherId;
+    if (PARTICIPANT_TYPE_STUDENT_ONLY.equals(normalizedType) && resolvedAdvisorTeacherId == null
+      && PARTICIPANT_TYPE_STUDENT_ONLY.equals(normalizeParticipantTypeOrDefault(currentParticipantType))) {
+      resolvedAdvisorTeacherId = currentAdvisorTeacherId;
+    }
+    if (PARTICIPANT_TYPE_STUDENT_ONLY.equals(normalizedType) && resolvedAdvisorTeacherId == null) {
+      resolvedAdvisorTeacherId = organizerId;
+    }
+    return validateParticipantSettings(normalizedType, resolvedAdvisorTeacherId);
+  }
+
+  private CompetitionParticipantSettings validateParticipantSettings(String participantType, Long advisorTeacherId) {
+    if (PARTICIPANT_TYPE_STUDENT_ONLY.equals(participantType)) {
+      if (advisorTeacherId == null) {
+        throw new IllegalArgumentException("学生赛必须指定指导老师");
+      }
+      validateAdvisorTeacher(advisorTeacherId);
+      return new CompetitionParticipantSettings(
+        participantType,
+        advisorTeacherId,
+        resolveAdvisorTeacherName(advisorTeacherId)
+      );
+    }
+    if (advisorTeacherId != null) {
+      throw new IllegalArgumentException("老师赛不能指定指导老师");
+    }
+    return new CompetitionParticipantSettings(participantType, null, null);
+  }
+
+  private void validateAdvisorTeacher(Long advisorTeacherId) {
+    if (userMapper == null) {
+      return;
+    }
+    UserEntity advisorTeacher = userMapper.selectById(advisorTeacherId);
+    if (advisorTeacher == null) {
+      throw new IllegalArgumentException("指导老师不存在");
+    }
+    if (!"TEACHER".equals(advisorTeacher.getRoleCode())) {
+      throw new IllegalArgumentException("指导老师必须是老师账号");
+    }
+    if (!"ENABLED".equals(advisorTeacher.getStatus())) {
+      throw new IllegalArgumentException("指导老师已停用");
+    }
+  }
+
+  private String resolveAdvisorTeacherName(Long advisorTeacherId) {
+    if (advisorTeacherId == null || userMapper == null) {
+      return null;
+    }
+    UserEntity advisorTeacher = userMapper.selectById(advisorTeacherId);
+    return advisorTeacher == null ? null : advisorTeacher.getRealName();
   }
 
   private CompetitionEntity getEntity(Long competitionId) {
@@ -510,5 +665,35 @@ public class CompetitionService {
       throw new IllegalArgumentException("比赛状态不合法");
     }
     return status;
+  }
+
+  private String normalizeParticipantType(String participantType) {
+    String normalized = participantType == null ? null : participantType.trim().toUpperCase();
+    if (!PARTICIPANT_TYPE_STUDENT_ONLY.equals(normalized) && !PARTICIPANT_TYPE_TEACHER_ONLY.equals(normalized)) {
+      throw new IllegalArgumentException("参赛类型不合法");
+    }
+    return normalized;
+  }
+
+  private String normalizeParticipantTypeOrDefault(String participantType) {
+    if (isBlank(participantType)) {
+      return PARTICIPANT_TYPE_STUDENT_ONLY;
+    }
+    return normalizeParticipantType(participantType);
+  }
+
+  private boolean isBlank(String value) {
+    return value == null || value.isBlank();
+  }
+
+  private boolean hasExplicitParticipantType(String participantType) {
+    return !isBlank(participantType);
+  }
+
+  private record CompetitionParticipantSettings(
+    String participantType,
+    Long advisorTeacherId,
+    String advisorTeacherName
+  ) {
   }
 }

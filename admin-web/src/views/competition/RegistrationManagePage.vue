@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import type { CompetitionParticipantType } from '@/api/competition'
 import { fetchManagedCompetitions, type CompetitionManageItem } from '@/api/competition-manage'
 import { fetchUsers, type UserItem } from '@/api/users'
 import {
@@ -33,17 +34,26 @@ const rejectForm = reactive({
 const selectedCompetition = computed(() =>
   competitions.value.find((item) => item.id === selectedCompetitionId.value) ?? null
 )
-const studentOptions = computed(() =>
+const manualUserOptions = computed(() =>
   users.value
-    .filter((user) => user.status === 'ENABLED' && user.roleCode === 'STUDENT')
+    .filter((user) => {
+      if (user.status !== 'ENABLED') {
+        return false
+      }
+      if (selectedCompetition.value?.participantType === 'TEACHER_ONLY') {
+        return user.roleCode === 'TEACHER'
+      }
+      return user.roleCode === 'STUDENT'
+    })
     .map((user) => ({
       id: user.id,
       label: `${user.realName} · ${user.studentNo}`,
-      phone: user.phone
+      phone: user.phone,
+      roleCode: user.roleCode
     }))
 )
-const selectedStudent = computed(() =>
-  studentOptions.value.find((item) => item.id === manualForm.userId) ?? null
+const selectedManualUser = computed(() =>
+  manualUserOptions.value.find((item) => item.id === manualForm.userId) ?? null
 )
 
 const registeredCount = computed(() =>
@@ -63,9 +73,28 @@ function clearNotice() {
   success.value = ''
 }
 
-function applyDefaultStudent() {
-  if (!manualForm.userId && studentOptions.value.length > 0) {
-    manualForm.userId = studentOptions.value[0].id
+const manualUserLabel = computed(() =>
+  selectedCompetition.value?.participantType === 'TEACHER_ONLY' ? '老师账号' : '学生账号'
+)
+const participantTypeLabel = computed(() =>
+  resolveParticipantTypeLabel(selectedCompetition.value?.participantType ?? 'STUDENT_ONLY')
+)
+const advisorTeacherText = computed(() => {
+  if (!selectedCompetition.value) {
+    return '指导老师待确定'
+  }
+  if (selectedCompetition.value.participantType !== 'STUDENT_ONLY') {
+    return '无需指定指导老师'
+  }
+  return selectedCompetition.value.advisorTeacherName || '指导老师待指定'
+})
+
+function applyDefaultManualUser() {
+  if (!manualForm.userId && manualUserOptions.value.length > 0) {
+    manualForm.userId = manualUserOptions.value[0].id
+  }
+  if (manualForm.userId && !manualUserOptions.value.some((item) => item.id === manualForm.userId)) {
+    manualForm.userId = manualUserOptions.value[0]?.id ?? 0
   }
 }
 
@@ -94,15 +123,19 @@ function resolveAttendanceLabel(attendanceStatus: RegistrationManageItem['attend
   return '待签到'
 }
 
+function resolveParticipantTypeLabel(participantType: CompetitionParticipantType) {
+  return participantType === 'TEACHER_ONLY' ? '仅老师参加' : '仅学生参加'
+}
+
 async function loadCompetitions(preferId?: number | null) {
   competitionLoading.value = true
   try {
     const [nextCompetitions, nextUsers] = await Promise.all([fetchManagedCompetitions(), fetchUsers()])
     competitions.value = nextCompetitions
     users.value = nextUsers
-    applyDefaultStudent()
     const nextCompetitionId = preferId ?? selectedCompetitionId.value ?? competitions.value[0]?.id ?? null
     selectedCompetitionId.value = nextCompetitionId
+    applyDefaultManualUser()
     if (nextCompetitionId) {
       await loadRegistrations(nextCompetitionId)
     } else {
@@ -134,6 +167,7 @@ async function loadRegistrations(competitionId = selectedCompetitionId.value) {
 
 async function handleCompetitionChange() {
   clearNotice()
+  applyDefaultManualUser()
   await loadRegistrations()
 }
 
@@ -144,7 +178,7 @@ async function handleManualAdd() {
     return
   }
   if (manualForm.userId <= 0) {
-    error.value = '请选择补录学生'
+    error.value = `请选择补录${manualUserLabel.value.replace('账号', '')}`
     return
   }
 
@@ -158,6 +192,7 @@ async function handleManualAdd() {
     success.value = `补录成功，记录编号 #${registrationId}`
     manualForm.userId = 0
     manualForm.remark = ''
+    applyDefaultManualUser()
     await loadRegistrations(selectedCompetitionId.value)
   } catch (submitError) {
     error.value = submitError instanceof Error ? submitError.message : '手动补录失败'
@@ -261,6 +296,7 @@ onMounted(() => {
             <strong>{{ selectedCompetition.title }}</strong>
             <p>{{ selectedCompetition.description }}</p>
             <span>状态：{{ selectedCompetition.status }} · 名额 {{ selectedCompetition.quota }}</span>
+            <span>参赛类型：{{ participantTypeLabel }} · 指导老师：{{ advisorTeacherText }}</span>
           </div>
         </div>
 
@@ -291,15 +327,15 @@ onMounted(() => {
             </div>
           </div>
           <label class="field">
-            <span>学生账号</span>
+            <span>{{ manualUserLabel }}</span>
             <select v-model.number="manualForm.userId">
-              <option :value="0" disabled>{{ studentOptions.length ? '请选择学生账号' : '暂无可补录学生' }}</option>
-              <option v-for="item in studentOptions" :key="item.id" :value="item.id">
+              <option :value="0" disabled>{{ manualUserOptions.length ? `请选择${manualUserLabel}` : `暂无可补录${manualUserLabel.replace('账号', '')}` }}</option>
+              <option v-for="item in manualUserOptions" :key="item.id" :value="item.id">
                 {{ item.label }}
               </option>
             </select>
           </label>
-          <p v-if="selectedStudent" class="field-hint">联系电话：{{ selectedStudent.phone }}</p>
+          <p v-if="selectedManualUser" class="field-hint">联系电话：{{ selectedManualUser.phone }}</p>
           <label class="field">
             <span>备注</span>
             <textarea v-model="manualForm.remark" placeholder="例如：后台补录、现场补录"></textarea>

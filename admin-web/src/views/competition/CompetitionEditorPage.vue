@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import { publishCompetition } from '@/api/competition'
+import { publishCompetition, type CompetitionParticipantType } from '@/api/competition'
 import {
   fetchManagedCompetitions,
   offlineCompetition,
@@ -21,8 +21,23 @@ const defaultForm = (): CompetitionFormValues => ({
   signupEndAt: '',
   startAt: '',
   endAt: '',
-  quota: 100
+  quota: 100,
+  participantType: 'STUDENT_ONLY',
+  advisorTeacherId: null
 })
+
+const participantTypeOptions: Array<{ value: CompetitionParticipantType; label: string; hint: string }> = [
+  {
+    value: 'STUDENT_ONLY',
+    label: '仅学生参加',
+    hint: '报名账号仅限学生，且需要固定绑定一名指导老师。'
+  },
+  {
+    value: 'TEACHER_ONLY',
+    label: '仅老师参加',
+    hint: '报名账号仅限老师，不需要指定指导老师。'
+  }
+]
 
 const loading = ref(false)
 const listLoading = ref(false)
@@ -50,9 +65,22 @@ const organizerOptions = computed(() =>
       phone: user.phone
     }))
 )
+const advisorTeacherOptions = computed(() =>
+  users.value
+    .filter((user) => user.status === 'ENABLED' && user.roleCode === 'TEACHER')
+    .map((user) => ({
+      id: user.id,
+      label: `${user.realName} · ${user.studentNo}`,
+      phone: user.phone
+    }))
+)
 const selectedOrganizer = computed(() =>
   organizerOptions.value.find((item) => item.id === form.organizerId) ?? null
 )
+const selectedAdvisorTeacher = computed(() =>
+  advisorTeacherOptions.value.find((item) => item.id === form.advisorTeacherId) ?? null
+)
+const isStudentOnly = computed(() => form.participantType === 'STUDENT_ONLY')
 
 function clearNotice() {
   error.value = ''
@@ -73,8 +101,11 @@ function applyCompetition(item: CompetitionManageItem) {
   form.startAt = normalizeDateTimeForInput(item.startAt)
   form.endAt = normalizeDateTimeForInput(item.endAt)
   form.quota = item.quota
+  form.participantType = item.participantType
+  form.advisorTeacherId = item.advisorTeacherId ?? null
   featureForm.recommended = item.recommended
   featureForm.pinned = item.pinned
+  applyDefaultAdvisorTeacher()
   clearNotice()
 }
 
@@ -84,6 +115,7 @@ function resetForm() {
   featureForm.pinned = false
   selectedCompetitionId.value = null
   applyDefaultOrganizer()
+  applyDefaultAdvisorTeacher()
   clearNotice()
 }
 
@@ -93,9 +125,39 @@ function applyDefaultOrganizer() {
   }
 }
 
+function applyDefaultAdvisorTeacher() {
+  if (!isStudentOnly.value) {
+    form.advisorTeacherId = null
+    return
+  }
+  if (form.advisorTeacherId && advisorTeacherOptions.value.some((item) => item.id === form.advisorTeacherId)) {
+    return
+  }
+  const organizerAsTeacher = users.value.find(
+    (user) => user.id === form.organizerId && user.status === 'ENABLED' && user.roleCode === 'TEACHER'
+  )
+  form.advisorTeacherId = organizerAsTeacher?.id ?? advisorTeacherOptions.value[0]?.id ?? null
+}
+
 function organizerText(organizerId: number) {
   const matched = users.value.find((user) => user.id === organizerId)
   return matched ? `${matched.realName} · ${matched.studentNo}` : '发起人信息待补充'
+}
+
+function resolveParticipantTypeLabel(participantType: CompetitionParticipantType) {
+  return participantType === 'STUDENT_ONLY' ? '仅学生参加' : '仅老师参加'
+}
+
+function resolveAdvisorTeacherText(item: CompetitionManageItem) {
+  if (item.participantType !== 'STUDENT_ONLY') {
+    return '指导老师：无需指定'
+  }
+  return `指导老师：${item.advisorTeacherName || '待指定'}`
+}
+
+function handleParticipantTypeChange() {
+  applyDefaultAdvisorTeacher()
+  clearNotice()
 }
 
 async function loadPageData(preferId?: number | null) {
@@ -106,6 +168,7 @@ async function loadPageData(preferId?: number | null) {
     users.value = nextUsers
     const targetId = preferId ?? selectedCompetitionId.value
     applyDefaultOrganizer()
+    applyDefaultAdvisorTeacher()
     if (!targetId) {
       return
     }
@@ -261,7 +324,7 @@ onMounted(() => {
 
         <div class="field">
           <label>发起人账号</label>
-          <select v-model.number="form.organizerId">
+          <select v-model.number="form.organizerId" @change="applyDefaultAdvisorTeacher">
             <option :value="0" disabled>{{ organizerOptions.length ? '请选择发起人' : '暂无可选发起账号' }}</option>
             <option v-for="item in organizerOptions" :key="item.id" :value="item.id">
               {{ item.label }}
@@ -276,6 +339,26 @@ onMounted(() => {
         <div class="field">
           <label>比赛说明</label>
           <textarea v-model="form.description" placeholder="请输入比赛说明"></textarea>
+        </div>
+        <div class="field">
+          <label>参赛类型</label>
+          <div class="participant-type-grid">
+            <label v-for="item in participantTypeOptions" :key="item.value" class="toggle-card option-card">
+              <input v-model="form.participantType" type="radio" :value="item.value" @change="handleParticipantTypeChange" />
+              <span>{{ item.label }}</span>
+              <small>{{ item.hint }}</small>
+            </label>
+          </div>
+        </div>
+        <div v-if="isStudentOnly" class="field">
+          <label>指导老师</label>
+          <select v-model="form.advisorTeacherId">
+            <option :value="null" disabled>{{ advisorTeacherOptions.length ? '请选择指导老师' : '暂无可选指导老师' }}</option>
+            <option v-for="item in advisorTeacherOptions" :key="item.id" :value="item.id">
+              {{ item.label }}
+            </option>
+          </select>
+          <p v-if="selectedAdvisorTeacher" class="field-hint">联系电话：{{ selectedAdvisorTeacher.phone }}</p>
         </div>
         <div class="grid">
           <div class="field">
@@ -359,6 +442,7 @@ onMounted(() => {
             </div>
             <p class="card-desc">{{ item.description }}</p>
             <p class="card-meta">{{ organizerText(item.organizerId) }} · 名额 {{ item.quota }}</p>
+            <p class="card-meta">{{ resolveParticipantTypeLabel(item.participantType) }} · {{ resolveAdvisorTeacherText(item) }}</p>
             <p class="card-meta">推荐：{{ item.recommended ? '是' : '否' }} · 置顶：{{ item.pinned ? '是' : '否' }}</p>
           </button>
         </div>
@@ -453,6 +537,7 @@ h2 {
 }
 
 .grid,
+.participant-type-grid,
 .feature-grid,
 .action-row {
   display: grid;
@@ -463,6 +548,7 @@ h2 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.participant-type-grid,
 .feature-grid,
 .action-row {
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -516,6 +602,16 @@ textarea {
   border: 1px solid #d7dee6;
   border-radius: 16px;
   color: #233243;
+}
+
+.option-card {
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.option-card small {
+  color: #607082;
+  line-height: 1.5;
 }
 
 .primary-button,

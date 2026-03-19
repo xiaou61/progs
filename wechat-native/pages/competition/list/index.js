@@ -5,6 +5,10 @@ const {
   resolveCompetitionStatusLabel
 } = require('../../../utils/competition')
 
+function resolveParticipantTypeLabel(participantType) {
+  return participantType === 'TEACHER_ONLY' ? '仅老师参加' : '仅学生参加'
+}
+
 Page({
   data: {
     loading: false,
@@ -28,7 +32,11 @@ Page({
         competitions: competitions.map((item) => ({
           ...item,
           statusLabel: resolveCompetitionStatusLabel(item),
-          signupWindow: formatCompetitionWindow(item.signupStartAt, item.signupEndAt)
+          signupWindow: formatCompetitionWindow(item.signupStartAt, item.signupEndAt),
+          participantTypeLabel: resolveParticipantTypeLabel(item.participantType),
+          advisorTeacherText: item.participantType === 'STUDENT_ONLY'
+            ? (item.advisorTeacherName || '指导老师待公布')
+            : '无需指定指导老师'
         }))
       })
     } catch (error) {

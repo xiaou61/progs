@@ -25,6 +25,13 @@ public class DemoAccountInitializer {
         "Abcd1234"
       ));
       ensureAccount(authService, userMapper, new RegisterCommand(
+        "T20260002",
+        "李老师",
+        "13800000012",
+        "TEACHER",
+        "Abcd1234"
+      ));
+      ensureAccount(authService, userMapper, new RegisterCommand(
         "S20260001",
         "张同学",
         "13800000001",

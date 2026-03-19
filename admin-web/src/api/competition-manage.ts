@@ -1,5 +1,7 @@
 import { request } from './http'
 
+import type { CompetitionParticipantType, PublishCompetitionPayload } from './competition'
+
 export type CompetitionManageItem = {
   id: number
   organizerId: number
@@ -13,18 +15,12 @@ export type CompetitionManageItem = {
   status: string
   recommended: boolean
   pinned: boolean
+  participantType: CompetitionParticipantType
+  advisorTeacherId: number | null
+  advisorTeacherName: string | null
 }
 
-export type CompetitionDraftPayload = {
-  organizerId: number
-  title: string
-  description: string
-  signupStartAt: string
-  signupEndAt: string
-  startAt: string
-  endAt: string
-  quota: number
-}
+export type CompetitionDraftPayload = PublishCompetitionPayload
 
 export type CompetitionUpdatePayload = CompetitionDraftPayload & {
   status: 'DRAFT' | 'PUBLISHED' | 'OFFLINE'

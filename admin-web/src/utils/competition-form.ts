@@ -1,3 +1,5 @@
+import type { CompetitionParticipantType } from '@/api/competition'
+
 export type CompetitionFormValues = {
   organizerId: number
   title: string
@@ -7,6 +9,8 @@ export type CompetitionFormValues = {
   startAt: string
   endAt: string
   quota: number
+  participantType: CompetitionParticipantType
+  advisorTeacherId: number | null
 }
 
 function toComparableTime(value: string) {
@@ -39,10 +43,16 @@ export function validateCompetitionForm(form: CompetitionFormValues) {
   if (!form.quota || form.quota <= 0) {
     return '比赛名额必须大于 0'
   }
+  if (form.participantType === 'STUDENT_ONLY' && (!form.advisorTeacherId || form.advisorTeacherId <= 0)) {
+    return '学生赛必须指定指导老师'
+  }
   return ''
 }
 
 export function buildPublishPayload(form: CompetitionFormValues) {
+  const advisorTeacherId = form.participantType === 'STUDENT_ONLY' && (form.advisorTeacherId ?? 0) > 0
+    ? form.advisorTeacherId
+    : null
   return {
     organizerId: form.organizerId,
     title: form.title.trim(),
@@ -51,6 +61,8 @@ export function buildPublishPayload(form: CompetitionFormValues) {
     signupEndAt: normalizeDateTime(form.signupEndAt),
     startAt: normalizeDateTime(form.startAt),
     endAt: normalizeDateTime(form.endAt),
-    quota: form.quota
+    quota: form.quota,
+    participantType: form.participantType,
+    advisorTeacherId
   }
 }

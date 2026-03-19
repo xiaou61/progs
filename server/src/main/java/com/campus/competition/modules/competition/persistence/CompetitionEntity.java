@@ -18,6 +18,8 @@ public class CompetitionEntity {
   private LocalDateTime startAt;
   private LocalDateTime endAt;
   private Integer quota;
+  private String participantType;
+  private Long advisorTeacherId;
   private String status;
   private Boolean isRecommended;
   private Boolean isPinned;
@@ -94,6 +96,22 @@ public class CompetitionEntity {
 
   public void setQuota(Integer quota) {
     this.quota = quota;
+  }
+
+  public String getParticipantType() {
+    return participantType;
+  }
+
+  public void setParticipantType(String participantType) {
+    this.participantType = participantType;
+  }
+
+  public Long getAdvisorTeacherId() {
+    return advisorTeacherId;
+  }
+
+  public void setAdvisorTeacherId(Long advisorTeacherId) {
+    this.advisorTeacherId = advisorTeacherId;
   }
 
   public String getStatus() {

@@ -22,6 +22,8 @@
       <text class="section-title">{{item.title}}</text>
       <text class="section-desc">{{item.description}}</text>
       <text class="list-meta">{{item.statusLabel}} · 名额 {{item.quota}}</text>
+      <text class="list-meta">参赛类型：{{item.participantTypeLabel}}</text>
+      <text wx:if="{{item.participantType === 'STUDENT_ONLY'}}" class="list-meta">指导老师：{{item.advisorTeacherText}}</text>
       <text class="list-meta">报名时间：{{item.signupWindow}}</text>
       <text class="list-meta action-text">查看详情并继续操作</text>
     </view>

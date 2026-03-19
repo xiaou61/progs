@@ -16,7 +16,8 @@ function buildEmptyForm() {
     signupEndAt: '',
     startAt: '',
     endAt: '',
-    quota: 120
+    quota: 120,
+    participantType: 'TEACHER_ONLY'
   }
 }
 
@@ -25,6 +26,10 @@ function buildFeatureForm() {
     recommended: false,
     pinned: false
   }
+}
+
+function resolveParticipantTypeLabel(participantType) {
+  return participantType === 'STUDENT_ONLY' ? '仅学生参加' : '仅老师参加'
 }
 
 Page({
@@ -95,7 +100,8 @@ Page({
         signupEndAt: item.signupEndAt,
         startAt: item.startAt,
         endAt: item.endAt,
-        quota: item.quota
+        quota: item.quota,
+        participantType: item.participantType || 'TEACHER_ONLY'
       },
       featureForm: {
         recommended: Boolean(item.recommended),
@@ -135,7 +141,8 @@ Page({
             signupEndAt: target.signupEndAt,
             startAt: target.startAt,
             endAt: target.endAt,
-            quota: target.quota
+            quota: target.quota,
+            participantType: target.participantType || 'TEACHER_ONLY'
           },
           featureForm: {
             recommended: Boolean(target.recommended),
@@ -172,11 +179,15 @@ Page({
     if (!form.quota || form.quota <= 0) {
       return '比赛名额必须大于 0'
     }
+    if (!form.participantType) {
+      return '请选择参赛类型'
+    }
     return ''
   },
 
   buildPayload() {
     const session = getSession()
+    const participantType = this.data.form.participantType || 'TEACHER_ONLY'
     return {
       organizerId: session.userId,
       title: this.data.form.title.trim(),
@@ -185,9 +196,13 @@ Page({
       signupEndAt: this.data.form.signupEndAt.trim(),
       startAt: this.data.form.startAt.trim(),
       endAt: this.data.form.endAt.trim(),
-      quota: Number(this.data.form.quota)
+      quota: Number(this.data.form.quota),
+      participantType,
+      advisorTeacherId: participantType === 'STUDENT_ONLY' ? session.userId : null
     }
   },
+
+  resolveParticipantTypeLabel,
 
   async submitPublish() {
     const session = getSession()

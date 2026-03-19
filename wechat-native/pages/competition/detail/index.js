@@ -10,6 +10,17 @@ const {
 } = require('../../../utils/competition')
 const { buildMessageChatRoute } = require('../../../utils/message')
 
+function resolveParticipantTypeLabel(participantType) {
+  return participantType === 'TEACHER_ONLY' ? '仅老师参加' : '仅学生参加'
+}
+
+function resolveAdvisorTeacherText(detail) {
+  if (!detail || detail.participantType !== 'STUDENT_ONLY') {
+    return '无需指定指导老师'
+  }
+  return detail.advisorTeacherName || '指导老师待公布'
+}
+
 Page({
   data: {
     competitionId: 0,
@@ -24,6 +35,8 @@ Page({
     statusLabel: '',
     signupWindow: '',
     competitionWindow: '',
+    participantTypeLabel: '',
+    advisorTeacherText: '',
     actionButtons: [
       { key: 'register', label: '立即报名' },
       { key: 'checkin', label: '现场签到' },
@@ -61,7 +74,9 @@ Page({
         detail,
         statusLabel: resolveCompetitionStatusLabel(detail),
         signupWindow: formatCompetitionWindow(detail.signupStartAt, detail.signupEndAt),
-        competitionWindow: formatCompetitionWindow(detail.startAt, detail.endAt)
+        competitionWindow: formatCompetitionWindow(detail.startAt, detail.endAt),
+        participantTypeLabel: resolveParticipantTypeLabel(detail.participantType),
+        advisorTeacherText: resolveAdvisorTeacherText(detail)
       })
     } catch (error) {
       this.setData({

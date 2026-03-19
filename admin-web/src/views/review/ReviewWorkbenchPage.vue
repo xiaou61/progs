@@ -63,6 +63,21 @@ function organizerText(organizerId: number) {
   return matched ? `${matched.realName} · ${matched.studentNo}` : '发起人信息待补充'
 }
 
+function resolveParticipantTypeLabel(participantType: CompetitionManageItem['participantType']) {
+  return participantType === 'TEACHER_ONLY' ? '仅老师参加' : '仅学生参加'
+}
+
+function advisorTeacherText(item: CompetitionManageItem) {
+  if (!item.advisorTeacherId) {
+    return '未配置'
+  }
+  if (item.advisorTeacherName?.trim()) {
+    return item.advisorTeacherName
+  }
+  const matched = users.value.find((user) => user.id === item.advisorTeacherId)
+  return matched ? `${matched.realName} · ${matched.studentNo}` : `老师 #${item.advisorTeacherId}`
+}
+
 function resetForms() {
   reviewForm.submissionId = 0
   reviewForm.studentId = 0
@@ -296,7 +311,11 @@ onMounted(() => {
       </button>
     </section>
     <p v-if="selectedCompetition" class="toolbar-hint">
-      {{ selectedCompetition.title }} · {{ selectedCompetition.status }} · {{ organizerText(selectedCompetition.organizerId) }}
+      {{ selectedCompetition.title }} · {{ selectedCompetition.status }} · {{ organizerText(selectedCompetition.organizerId) }} ·
+      {{ resolveParticipantTypeLabel(selectedCompetition.participantType) }}
+      <template v-if="selectedCompetition.participantType === 'STUDENT_ONLY'">
+        · 指导老师 {{ advisorTeacherText(selectedCompetition) }}
+      </template>
     </p>
     <p v-else-if="!competitionLoading" class="toolbar-hint">当前没有可评审的比赛，请先完成比赛发布。</p>
 

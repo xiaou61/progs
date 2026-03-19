@@ -11,6 +11,21 @@ public record UpdateCompetitionCommand(
   LocalDateTime startAt,
   LocalDateTime endAt,
   Integer quota,
-  String status
+  String status,
+  String participantType,
+  Long advisorTeacherId
 ) {
+  public UpdateCompetitionCommand(
+    Long organizerId,
+    String title,
+    String description,
+    LocalDateTime signupStartAt,
+    LocalDateTime signupEndAt,
+    LocalDateTime startAt,
+    LocalDateTime endAt,
+    Integer quota,
+    String status
+  ) {
+    this(organizerId, title, description, signupStartAt, signupEndAt, startAt, endAt, quota, status, null, null);
+  }
 }

@@ -16,6 +16,22 @@
       <input class="input" value="{{form.title}}" data-field="form.title" placeholder="请输入比赛名称" bindinput="updateField" />
     </view>
     <view class="field">
+      <text class="label">参赛类型</text>
+      <radio-group data-field="form.participantType" bindchange="updateField">
+        <label class="radio-option">
+          <radio value="TEACHER_ONLY" checked="{{form.participantType === 'TEACHER_ONLY'}}" color="#c86c31" />
+          <text>仅老师参加</text>
+        </label>
+        <label class="radio-option">
+          <radio value="STUDENT_ONLY" checked="{{form.participantType === 'STUDENT_ONLY'}}" color="#c86c31" />
+          <text>仅学生参加</text>
+        </label>
+      </radio-group>
+      <text class="list-meta">
+        {{form.participantType === 'STUDENT_ONLY' ? '当前老师会自动作为该比赛的固定指导老师。' : '老师赛无需指定指导老师。'}}
+      </text>
+    </view>
+    <view class="field">
       <text class="label">比赛说明</text>
       <textarea class="textarea" value="{{form.description}}" data-field="form.description" placeholder="请输入比赛说明" bindinput="updateField" />
     </view>
@@ -81,6 +97,8 @@
       <view wx:for="{{myCompetitions}}" wx:key="id" class="competition-item {{selectedCompetitionId === item.id ? 'competition-item-active' : ''}}" data-id="{{item.id}}" bindtap="applyCompetitionById">
         <text class="list-title">{{item.title}}</text>
         <text class="list-meta">状态：{{item.status}} · 名额：{{item.quota}}</text>
+        <text class="list-meta">参赛类型：{{resolveParticipantTypeLabel(item.participantType)}}</text>
+        <text wx:if="{{item.participantType === 'STUDENT_ONLY'}}" class="list-meta">指导老师：{{item.advisorTeacherName || '当前老师'}}</text>
         <text class="list-meta">推荐：{{item.recommended ? '是' : '否'}} · 置顶：{{item.pinned ? '是' : '否'}}</text>
       </view>
     </view>

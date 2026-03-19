@@ -1,5 +1,7 @@
 import { request } from './http'
 
+export type CompetitionParticipantType = 'STUDENT_ONLY' | 'TEACHER_ONLY'
+
 export type PublishCompetitionPayload = {
   organizerId: number
   title: string
@@ -9,6 +11,8 @@ export type PublishCompetitionPayload = {
   startAt: string
   endAt: string
   quota: number
+  participantType: CompetitionParticipantType
+  advisorTeacherId: number | null
 }
 
 export async function publishCompetition(payload: PublishCompetitionPayload): Promise<number> {

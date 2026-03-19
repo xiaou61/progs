@@ -30,6 +30,14 @@
       <text class="list-meta">比赛名额</text>
       <text>{{detail.quota}} 人</text>
     </view>
+    <view class="meta-card">
+      <text class="list-meta">参赛类型</text>
+      <text>{{participantTypeLabel}}</text>
+    </view>
+    <view wx:if="{{detail.participantType === 'STUDENT_ONLY'}}" class="meta-card">
+      <text class="list-meta">指导老师</text>
+      <text>{{advisorTeacherText}}</text>
+    </view>
 
     <view class="button-row">
       <button wx:for="{{actionButtons}}" wx:key="key" class="primary-btn" data-target="{{item.key}}" bindtap="openAction">

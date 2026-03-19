@@ -33,7 +33,9 @@ describe('competition form', () => {
       signupEndAt: '2026-03-20T18:00',
       startAt: '2026-03-21T09:00',
       endAt: '2026-03-21T18:00',
-      quota: 200
+      quota: 200,
+      participantType: 'STUDENT_ONLY' as const,
+      advisorTeacherId: 2001
     }
 
     const competitionId = await publishCompetition(buildPublishPayload(form))
@@ -51,7 +53,9 @@ describe('competition form', () => {
         signupEndAt: '2026-03-20T18:00:00',
         startAt: '2026-03-21T09:00:00',
         endAt: '2026-03-21T18:00:00',
-        quota: 200
+        quota: 200,
+        participantType: 'STUDENT_ONLY',
+        advisorTeacherId: 2001
       })
     })
     expect(competitionId).toBe(8)
@@ -66,7 +70,9 @@ describe('competition form', () => {
       signupEndAt: '2026-03-18T18:00',
       startAt: '2026-03-21T09:00',
       endAt: '2026-03-21T08:00',
-      quota: 0
+      quota: 0,
+      participantType: 'STUDENT_ONLY',
+      advisorTeacherId: 0
     })).toBe('比赛名称不能为空')
   })
 })

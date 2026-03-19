@@ -20,6 +20,16 @@
       <text class="list-meta">{{competitionId}}</text>
     </view>
 
+    <view class="field compact-field">
+      <text class="label">参赛类型</text>
+      <text class="list-meta">{{participantTypeLabel}}</text>
+    </view>
+
+    <view wx:if="{{participantType === 'STUDENT_ONLY'}}" class="field compact-field">
+      <text class="label">指导老师</text>
+      <text class="list-meta">{{advisorTeacherName || '指导老师待公布'}}</text>
+    </view>
+
     <view class="field">
       <text class="label">当前账号</text>
       <text class="list-meta">{{accountLabel}} · {{roleCode === 'TEACHER' ? '老师账号' : '学生账号'}}</text>
@@ -37,9 +47,10 @@
 
     <text wx:if="{{error}}" class="error-text">{{error}}</text>
     <text wx:if="{{success}}" class="success-text">{{success}}</text>
+    <text wx:if="{{!canRegister && registerHint}}" class="error-text">{{registerHint}}</text>
 
-    <button class="primary-btn" loading="{{submitting}}" disabled="{{submitting || hasActiveRegistration}}" bindtap="submitRegistration">
-      {{hasActiveRegistration ? '当前已报名' : (submitting ? '提交中...' : (registration ? '重新报名' : '提交报名'))}}
+    <button class="primary-btn" loading="{{submitting}}" disabled="{{submitting || hasActiveRegistration || !canRegister}}" bindtap="submitRegistration">
+      {{!canRegister ? registerHint : (hasActiveRegistration ? '当前已报名' : (submitting ? '提交中...' : (registration ? '重新报名' : '提交报名')))}}
     </button>
 
     <button wx:if="{{hasActiveRegistration}}" class="danger-btn" loading="{{submitting}}" disabled="{{submitting}}" bindtap="submitCancel">

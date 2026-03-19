@@ -1,6 +1,8 @@
 package com.campus.competition.modules.registration.service;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.campus.competition.modules.auth.mapper.UserMapper;
+import com.campus.competition.modules.auth.persistence.UserEntity;
 import com.campus.competition.modules.competition.model.CompetitionDetail;
 import com.campus.competition.modules.competition.service.CompetitionService;
 import com.campus.competition.modules.registration.model.CancelRegistrationCommand;
@@ -23,6 +25,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class RegistrationService {
 
+  private static final String PARTICIPANT_TYPE_STUDENT_ONLY = "STUDENT_ONLY";
+  private static final String PARTICIPANT_TYPE_TEACHER_ONLY = "TEACHER_ONLY";
   private static final String STATUS_REGISTERED = "REGISTERED";
   private static final String STATUS_CANCELLED = "CANCELLED";
   private static final String STATUS_REJECTED = "REJECTED";
@@ -34,6 +38,8 @@ public class RegistrationService {
   private final Map<Long, RegistrationSummary> registrations = new ConcurrentHashMap<>();
   private final CompetitionService competitionService;
   private final RegistrationMapper registrationMapper;
+  @Autowired(required = false)
+  private UserMapper userMapper;
 
   public RegistrationService(CompetitionService competitionService) {
     this.competitionService = competitionService;
@@ -173,6 +179,7 @@ public class RegistrationService {
       throw new IllegalArgumentException("用户不能为空");
     }
     CompetitionDetail competition = competitionService.getCompetition(command.competitionId());
+    validateParticipantRole(command.userId(), competition.participantType());
     if (registrationMapper != null) {
       return manualAddWithDatabase(command, competition);
     }
@@ -294,6 +301,26 @@ public class RegistrationService {
     LocalDateTime now = LocalDateTime.now();
     if (now.isBefore(competition.signupStartAt()) || now.isAfter(competition.signupEndAt())) {
       throw new IllegalArgumentException("当前不在报名时间内");
+    }
+    validateParticipantRole(command.userId(), competition.participantType());
+  }
+
+  private void validateParticipantRole(Long userId, String participantType) {
+    if (userMapper == null || userId == null) {
+      return;
+    }
+    UserEntity user = userMapper.selectById(userId);
+    if (user == null) {
+      throw new IllegalArgumentException("用户不存在");
+    }
+    String normalizedParticipantType = participantType == null || participantType.isBlank()
+      ? PARTICIPANT_TYPE_STUDENT_ONLY
+      : participantType.trim().toUpperCase();
+    if (PARTICIPANT_TYPE_STUDENT_ONLY.equals(normalizedParticipantType) && !"STUDENT".equals(user.getRoleCode())) {
+      throw new IllegalArgumentException("当前比赛仅限学生报名");
+    }
+    if (PARTICIPANT_TYPE_TEACHER_ONLY.equals(normalizedParticipantType) && !"TEACHER".equals(user.getRoleCode())) {
+      throw new IllegalArgumentException("当前比赛仅限老师报名");
     }
   }
 

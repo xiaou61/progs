@@ -50,7 +50,8 @@ class TeacherCompetitionManageApiTest {
                 "signupEndAt": "%s",
                 "startAt": "%s",
                 "endAt": "%s",
-                "quota": 60
+                "quota": 60,
+                "participantType": "TEACHER_ONLY"
               }
               """.formatted(
               now.plusDays(1),
@@ -84,7 +85,8 @@ class TeacherCompetitionManageApiTest {
               "startAt": "%s",
               "endAt": "%s",
               "quota": 90,
-              "status": "DRAFT"
+              "status": "DRAFT",
+              "participantType": "TEACHER_ONLY"
             }
             """.formatted(
             now.plusDays(1),
