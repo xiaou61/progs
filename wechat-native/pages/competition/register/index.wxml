@@ -53,8 +53,9 @@
       {{!canRegister ? registerHint : (hasActiveRegistration ? '当前已报名' : (submitting ? '提交中...' : (registration ? '重新报名' : '提交报名')))}}
     </button>
 
-    <button wx:if="{{hasActiveRegistration}}" class="danger-btn" loading="{{submitting}}" disabled="{{submitting}}" bindtap="submitCancel">
-      {{submitting ? '处理中...' : '取消报名'}}
+    <button wx:if="{{hasActiveRegistration}}" class="danger-btn" loading="{{submitting}}" disabled="{{submitting || !canCancel}}" bindtap="submitCancel">
+      {{submitting ? '处理中...' : (canCancel ? '取消报名' : '报名截止后不可取消')}}
     </button>
+    <text wx:if="{{hasActiveRegistration && !canCancel && cancelHint}}" class="list-meta">{{cancelHint}}</text>
   </view>
 </view>

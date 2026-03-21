@@ -442,6 +442,7 @@ public class RegistrationService {
     if (!STATUS_REGISTERED.equals(entity.getStatus())) {
       throw new IllegalArgumentException("当前报名状态不可取消");
     }
+    validateCancelDeadline(entity.getCompetitionId());
   }
 
   private void validateCancelable(RegistrationSummary summary, Long userId) {
@@ -450,6 +451,14 @@ public class RegistrationService {
     }
     if (!STATUS_REGISTERED.equals(summary.status())) {
       throw new IllegalArgumentException("当前报名状态不可取消");
+    }
+    validateCancelDeadline(summary.competitionId());
+  }
+
+  private void validateCancelDeadline(Long competitionId) {
+    CompetitionDetail competition = competitionService.getCompetition(competitionId);
+    if (competition != null && LocalDateTime.now().isAfter(competition.signupEndAt())) {
+      throw new IllegalArgumentException("报名截止后不能取消报名");
     }
   }
 

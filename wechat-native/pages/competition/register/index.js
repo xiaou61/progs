@@ -6,6 +6,7 @@ const {
 } = require('../../../services/registration')
 const { getRoleCode, getSession, requireLogin } = require('../../../utils/auth')
 const { resolveCompetitionId } = require('../../../utils/competition')
+const { resolveCancelPermission } = require('../../../utils/registration-permission')
 
 function buildStatusText(registration) {
   if (!registration) {
@@ -82,6 +83,7 @@ Page({
     competitionId: 0,
     competitionTitle: '未选择比赛',
     competitionDesc: '请从比赛列表进入后再完成报名。',
+    competition: null,
     participantType: 'STUDENT_ONLY',
     participantTypeLabel: '仅学生参加',
     advisorTeacherName: '',
@@ -97,7 +99,9 @@ Page({
     attendanceText: '待签到',
     hasActiveRegistration: false,
     canRegister: false,
-    registerHint: '比赛信息加载中，请稍后重试'
+    registerHint: '比赛信息加载中，请稍后重试',
+    canCancel: false,
+    cancelHint: ''
   },
 
   onLoad(options) {
@@ -140,14 +144,18 @@ Page({
     try {
       const current = await fetchCompetitionDetail(this.data.competitionId)
       const permission = resolveRegisterPermission(this.data.roleCode, current)
+      const cancelPermission = resolveCancelPermission(current, this.data.registration)
       this.setData({
+        competition: current,
         competitionTitle: current.title,
         competitionDesc: current.description,
         participantType: current.participantType || 'STUDENT_ONLY',
         participantTypeLabel: resolveParticipantTypeLabel(current.participantType),
         advisorTeacherName: current.advisorTeacherName || '',
         canRegister: permission.canRegister,
-        registerHint: permission.hint
+        registerHint: permission.hint,
+        canCancel: cancelPermission.canCancel,
+        cancelHint: cancelPermission.hint
       })
     } catch (error) {
       this.setData({
@@ -162,11 +170,14 @@ Page({
     const session = getSession()
     try {
       const registration = await fetchUserRegistration(this.data.competitionId, session.userId)
+      const cancelPermission = resolveCancelPermission(this.data.competition, registration)
       this.setData({
         registration,
         statusText: buildStatusText(registration),
         attendanceText: buildAttendanceText(registration),
-        hasActiveRegistration: Boolean(registration && registration.status === 'REGISTERED')
+        hasActiveRegistration: Boolean(registration && registration.status === 'REGISTERED'),
+        canCancel: cancelPermission.canCancel,
+        cancelHint: cancelPermission.hint
       })
     } catch (error) {
       this.setData({
@@ -211,6 +222,13 @@ Page({
   async submitCancel() {
     const session = getSession()
     if (!this.data.registration) {
+      return
+    }
+    if (!this.data.canCancel) {
+      this.setData({
+        error: this.data.cancelHint || '当前不可取消报名',
+        success: ''
+      })
       return
     }
 
