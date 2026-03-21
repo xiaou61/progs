@@ -13,4 +13,11 @@ describe('competition editor feature save behavior', () => {
     expect(formSource).toMatch(/buildPublishPayload\([\s\S]*featureForm[\s\S]*pinned:\s*featureForm\.pinned/)
     expect(editorSource).toMatch(/buildPublishPayload\(form,\s*featureForm\)/)
   })
+
+  it('auto-selects the first managed competition so feature actions are immediately available', () => {
+    const editorSource = readFileSync(resolve(process.cwd(), 'src/views/competition/CompetitionEditorPage.vue'), 'utf-8')
+
+    expect(editorSource).toMatch(/if\s*\(!targetId\)\s*\{[\s\S]*competitions\.value\.length\s*>\s*0[\s\S]*applyCompetition\(competitions\.value\[0\]\)/)
+    expect(editorSource).toContain('推荐/置顶和下架针对当前选中的比赛生效')
+  })
 })

@@ -88,7 +88,11 @@ function clearNotice() {
 }
 
 function normalizeDateTimeForInput(value: string) {
-  return value.slice(0, 16)
+  if (!value) {
+    return ''
+  }
+  const normalized = value.includes(' ') ? value.replace(' ', 'T') : value
+  return normalized.slice(0, 16)
 }
 
 function applyCompetition(item: CompetitionManageItem) {
@@ -170,12 +174,22 @@ async function loadPageData(preferId?: number | null) {
     applyDefaultOrganizer()
     applyDefaultAdvisorTeacher()
     if (!targetId) {
+      if (competitions.value.length > 0) {
+        applyCompetition(competitions.value[0])
+        return
+      }
+      selectedCompetitionId.value = null
       return
     }
 
     const matched = competitions.value.find((item) => item.id === targetId)
     if (matched) {
       applyCompetition(matched)
+      return
+    }
+
+    if (competitions.value.length > 0) {
+      applyCompetition(competitions.value[0])
       return
     }
 
@@ -410,6 +424,13 @@ onMounted(() => {
             {{ featureLoading ? '处理中...' : '下架比赛' }}
           </button>
         </div>
+        <p class="action-hint">
+          {{
+            hasSelection
+              ? '推荐/置顶和下架针对当前选中的比赛生效。'
+              : '推荐/置顶和下架针对当前选中的比赛生效；新建比赛请先发布，或先点击右侧比赛后再操作。'
+          }}
+        </p>
       </section>
 
       <aside class="panel list-panel">
@@ -565,6 +586,13 @@ h2 {
   margin: 0;
   color: #607082;
   font-size: 13px;
+}
+
+.action-hint {
+  margin: 12px 2px 0;
+  color: #607082;
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 label {
