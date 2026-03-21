@@ -37,7 +37,7 @@ function resolveHomeRoute(menuKey) {
 
 function resolveOverviewRoute(cardKey) {
   if (cardKey === 'my-competitions') {
-    return '/pages/competition/list/index'
+    return '/pages/competition/list/index?scope=my'
   }
   if (cardKey === 'submitted-works') {
     return '/pages/competition/portfolio/index?tab=works'

@@ -11,6 +11,10 @@ function fetchUserRegistration(competitionId, userId) {
   return request(`/api/app/registrations/competition/${competitionId}/user/${userId}`)
 }
 
+function fetchUserRegistrations(userId) {
+  return request(`/api/app/registrations/user/${userId}`)
+}
+
 function cancelRegistration(registrationId, userId) {
   return request(`/api/app/registrations/${registrationId}/cancel`, {
     method: 'POST',
@@ -21,5 +25,6 @@ function cancelRegistration(registrationId, userId) {
 module.exports = {
   cancelRegistration,
   fetchUserRegistration,
+  fetchUserRegistrations,
   registerCompetition
 }

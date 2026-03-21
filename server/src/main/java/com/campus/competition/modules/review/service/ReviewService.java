@@ -104,6 +104,9 @@ public class ReviewService {
       command.competitionId(),
       command.submissionId(),
       command.studentId(),
+      submission.fileUrl(),
+      submission.versionNo(),
+      submission.submittedAt(),
       command.reviewerName().trim(),
       STATUS_COMPLETED,
       command.reviewComment().trim(),
@@ -140,6 +143,9 @@ public class ReviewService {
         submission.competitionId(),
         submission.id(),
         submission.userId(),
+        submission.fileUrl(),
+        submission.versionNo(),
+        submission.submittedAt(),
         null,
         STATUS_PENDING,
         null,
@@ -151,6 +157,9 @@ public class ReviewService {
       entity.getCompetitionId(),
       entity.getSubmissionId(),
       entity.getStudentId(),
+      submission.fileUrl(),
+      submission.versionNo(),
+      submission.submittedAt(),
       entity.getReviewerName(),
       entity.getStatus(),
       entity.getReviewComment(),
@@ -161,12 +170,27 @@ public class ReviewService {
 
   private ReviewTaskSummary toSummary(SubmissionSummary submission, ReviewTaskSummary summary) {
     if (summary != null) {
-      return summary;
+      return new ReviewTaskSummary(
+        submission.competitionId(),
+        submission.id(),
+        submission.userId(),
+        submission.fileUrl(),
+        submission.versionNo(),
+        submission.submittedAt(),
+        summary.reviewerName(),
+        summary.status(),
+        summary.reviewComment(),
+        summary.suggestedScore(),
+        summary.reviewedAt()
+      );
     }
     return new ReviewTaskSummary(
       submission.competitionId(),
       submission.id(),
       submission.userId(),
+      submission.fileUrl(),
+      submission.versionNo(),
+      submission.submittedAt(),
       null,
       STATUS_PENDING,
       null,

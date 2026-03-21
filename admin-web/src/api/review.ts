@@ -4,6 +4,9 @@ export type ReviewTaskItem = {
   competitionId: number
   submissionId: number
   studentId: number
+  fileUrl: string
+  versionNo: number
+  submittedAt: string | null
   reviewerName: string | null
   status: string
   reviewComment: string | null

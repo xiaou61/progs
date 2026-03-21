@@ -1,5 +1,5 @@
 const { fetchCompetitions } = require('../../../services/competition')
-const { fetchStudentOverview } = require('../../../services/result')
+const { fetchCompetitionResults, fetchStudentOverview } = require('../../../services/result')
 const { resolveCompetitionId } = require('../../../utils/competition')
 const { getSession, requireLogin } = require('../../../utils/auth')
 const { buildAwardCards } = require('../../../utils/result')
@@ -30,20 +30,23 @@ Page({
 
   async loadResults() {
     const session = getSession()
+    const userId = session.userId
     this.setData({
       loading: true,
       error: ''
     })
 
     try {
-      const [overview, competitions] = await Promise.all([
-        fetchStudentOverview(session.userId),
+      const [results, competitions] = await Promise.all([
+        this.data.competitionId
+          ? fetchCompetitionResults(this.data.competitionId)
+          : fetchStudentOverview(userId).then((overview) => overview.results),
         fetchCompetitions()
       ])
       this.setData({
         awards: buildAwardCards({
           competitionId: this.data.competitionId,
-          results: overview.results,
+          results,
           competitions
         })
       })

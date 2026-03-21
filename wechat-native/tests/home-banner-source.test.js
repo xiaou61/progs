@@ -1,0 +1,23 @@
+const test = require('node:test')
+const assert = require('node:assert/strict')
+const { readFileSync } = require('node:fs')
+const { resolve } = require('node:path')
+
+test('home page should expose banner swiper and my competition scoped route', () => {
+  const homeSource = readFileSync(resolve(__dirname, '../pages/home/index.js'), 'utf-8')
+  const homeTemplateSource = readFileSync(resolve(__dirname, '../pages/home/index.wxml'), 'utf-8')
+  const homeUtilSource = readFileSync(resolve(__dirname, '../utils/home.js'), 'utf-8')
+  const competitionListSource = readFileSync(resolve(__dirname, '../pages/competition/list/index.js'), 'utf-8')
+  const registrationServiceSource = readFileSync(resolve(__dirname, '../services/registration.js'), 'utf-8')
+  const systemServiceSource = readFileSync(resolve(__dirname, '../services/system.js'), 'utf-8')
+
+  assert.match(homeSource, /fetchHomeBanners/)
+  assert.match(homeSource, /openBanner\(/)
+  assert.match(homeTemplateSource, /swiper/)
+  assert.match(homeTemplateSource, /bindtap="openBanner"/)
+  assert.match(homeUtilSource, /scope=my/)
+  assert.match(competitionListSource, /fetchUserRegistrations/)
+  assert.match(competitionListSource, /scope/)
+  assert.match(registrationServiceSource, /\/api\/app\/registrations\/user\//)
+  assert.match(systemServiceSource, /\/api\/app\/banners/)
+})

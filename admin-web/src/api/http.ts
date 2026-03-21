@@ -16,6 +16,44 @@ function buildUrl(path: string) {
   return `${baseUrl}${path}`
 }
 
+export function buildAssetUrl(path: string) {
+  if (!path) {
+    return ''
+  }
+  if (/^https?:\/\//i.test(path)) {
+    return path
+  }
+  const baseUrl = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
+  return baseUrl ? `${baseUrl}${path}` : path
+}
+
+export async function requestMultipartFile<T>(path: string, file: File, fieldName = 'file'): Promise<T> {
+  const session = loadAdminSession()
+  const headers: Record<string, string> = {}
+  if (session?.token) {
+    headers.Authorization = `Bearer ${session.token}`
+  }
+
+  const formData = new FormData()
+  formData.append(fieldName, file)
+
+  const response = await fetch(buildUrl(path), {
+    method: 'POST',
+    headers,
+    body: formData
+  })
+  if (!response.ok) {
+    throw new Error(`请求失败：${response.status}`)
+  }
+
+  const payload = (await response.json()) as ApiEnvelope<T>
+  if (payload.code !== 0) {
+    throw new Error(payload.message || '请求失败')
+  }
+
+  return payload.data
+}
+
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const session = loadAdminSession()
   const headers: Record<string, string> = {}

@@ -41,7 +41,8 @@ public class AdminBannerController {
 
     entity.setTitle(normalizeRequired(command == null ? null : command.title(), "轮播图标题不能为空"));
     entity.setStatus(normalizeStatus(command == null ? null : command.status()));
-    entity.setJumpPath(normalizeRequired(command == null ? null : command.jumpPath(), "跳转路径不能为空"));
+    entity.setJumpPath(normalizeJumpPath(command == null ? null : command.jumpPath()));
+    entity.setImageUrl(normalizeOptional(command == null ? null : command.imageUrl()));
     entity.setUpdatedAt(LocalDateTime.now());
     bannerMapper.updateById(entity);
     return ApiResponse.success(toView(entity));
@@ -63,12 +64,27 @@ public class AdminBannerController {
     return normalized;
   }
 
+  private String normalizeJumpPath(String jumpPath) {
+    if (jumpPath == null || jumpPath.isBlank()) {
+      return "";
+    }
+    return jumpPath.trim();
+  }
+
+  private String normalizeOptional(String value) {
+    if (value == null || value.isBlank()) {
+      return null;
+    }
+    return value.trim();
+  }
+
   private BannerView toView(BannerEntity entity) {
     return new BannerView(
       entity.getId(),
       entity.getTitle(),
       entity.getStatus(),
-      entity.getJumpPath()
+      entity.getJumpPath(),
+      entity.getImageUrl()
     );
   }
 
@@ -76,14 +92,16 @@ public class AdminBannerController {
     Long id,
     String title,
     String status,
-    String jumpPath
+    String jumpPath,
+    String imageUrl
   ) {
   }
 
   public record SaveBannerCommand(
     String title,
     String status,
-    String jumpPath
+    String jumpPath,
+    String imageUrl
   ) {
   }
 }

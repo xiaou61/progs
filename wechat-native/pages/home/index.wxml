@@ -8,6 +8,20 @@
     <button class="ghost-button pill-button" size="mini" bindtap="logout">退出登录</button>
   </view>
 
+  <swiper wx:if="{{banners.length > 0}}" class="banner-swiper" circular autoplay interval="4500" duration="500">
+    <swiper-item wx:for="{{banners}}" wx:key="id">
+      <view class="panel banner-card" data-path="{{item.jumpPath}}" bindtap="openBanner">
+        <image wx:if="{{item.imageUrl}}" class="banner-image" mode="aspectFill" src="{{item.imageUrl}}" />
+        <view class="banner-copy">
+          <text class="banner-eyebrow">Banner</text>
+          <text class="banner-title">{{item.title}}</text>
+          <text wx:if="{{item.jumpPath}}" class="banner-desc">点击进入 {{item.jumpPath}}</text>
+          <text wx:else class="banner-desc">当前轮播图仅展示图片，不跳转</text>
+        </view>
+      </view>
+    </swiper-item>
+  </swiper>
+
   <view class="panel task-panel">
     <view class="meta-row">
       <text class="section-title">今日任务</text>

@@ -1,8 +1,8 @@
 <view class="page">
   <view class="hero">
     <text class="eyebrow">Competition</text>
-    <text class="title">比赛列表</text>
-    <text class="desc">这里展示可参与的比赛，以及当前的报名状态和时间窗口。</text>
+    <text class="title">{{titleText}}</text>
+    <text class="desc">{{descText}}</text>
   </view>
 
   <view wx:if="{{loading}}" class="state-card">
@@ -14,7 +14,7 @@
   </view>
 
   <view wx:elif="{{competitions.length === 0}}" class="state-card">
-    <text>当前还没有可展示的比赛。</text>
+    <text>{{emptyText}}</text>
   </view>
 
   <view wx:else class="list">

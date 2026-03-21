@@ -13,6 +13,7 @@ public class BannerEntity {
   private String title;
   private String status;
   private String jumpPath;
+  private String imageUrl;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
 
@@ -46,6 +47,14 @@ public class BannerEntity {
 
   public void setJumpPath(String jumpPath) {
     this.jumpPath = jumpPath;
+  }
+
+  public String getImageUrl() {
+    return imageUrl;
+  }
+
+  public void setImageUrl(String imageUrl) {
+    this.imageUrl = imageUrl;
   }
 
   public LocalDateTime getCreatedAt() {

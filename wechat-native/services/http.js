@@ -95,6 +95,7 @@ function requestText(path, options) {
 }
 
 module.exports = {
+  buildUrl,
   request,
   requestText
 }

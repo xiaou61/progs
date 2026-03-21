@@ -1,16 +1,24 @@
-import { request } from './http'
+import { request, requestMultipartFile } from './http'
 
 export type BannerItem = {
   id: number
   title: string
   status: string
   jumpPath: string
+  imageUrl: string | null
 }
 
 export type UpdateBannerPayload = {
   title: string
   status: string
   jumpPath: string
+  imageUrl: string | null
+}
+
+export type BannerUploadResult = {
+  originalFileName: string
+  imageUrl: string
+  fileSize: number
 }
 
 export type SystemConfigSummary = {
@@ -35,6 +43,10 @@ export async function updateBanner(bannerId: number, payload: UpdateBannerPayloa
     method: 'PUT',
     body: payload
   })
+}
+
+export async function uploadBannerImage(file: File): Promise<BannerUploadResult> {
+  return requestMultipartFile<BannerUploadResult>('/api/admin/banner-files', file)
 }
 
 export async function updateSystemConfig(payload: UpdateSystemConfigPayload): Promise<SystemConfigSummary> {

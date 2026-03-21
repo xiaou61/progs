@@ -46,7 +46,7 @@ test('home and task utilities should expose menu metadata and task labels', () =
     'my-profile'
   ])
   assert.equal(resolveHomeRoute('my-profile'), '/pages/profile/index')
-  assert.equal(resolveOverviewRoute('my-competitions'), '/pages/competition/list/index')
+  assert.equal(resolveOverviewRoute('my-competitions'), '/pages/competition/list/index?scope=my')
   assert.equal(resolveOverviewRoute('submitted-works'), '/pages/competition/portfolio/index?tab=works')
   assert.equal(resolveOverviewRoute('award-results'), '/pages/competition/portfolio/index?tab=awards')
   assert.equal(resolveOverviewRoute('total-points'), '/pages/points/index')

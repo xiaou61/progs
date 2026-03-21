@@ -21,6 +21,7 @@
     <view wx:for="{{awards}}" wx:key="id" class="panel">
       <text class="section-title">{{item.title}}</text>
       <text class="section-desc">{{item.awardName}} · {{item.rankText}}</text>
+      <text wx:if="{{item.winnerText}}" class="list-meta">获奖人 {{item.winnerText}}</text>
       <text class="list-meta">成绩 {{item.score}} · 奖励积分 {{item.points}}</text>
       <text wx:if="{{item.reviewerName}}" class="list-meta">评审老师 {{item.reviewerName}}</text>
       <text wx:if="{{item.reviewComment}}" class="list-meta">评审意见：{{item.reviewComment}}</text>

@@ -10,6 +10,8 @@ test('result utils should keep all results when competition id is empty', () => 
       {
         id: 1,
         competitionId: 8,
+        studentNo: 'S20260001',
+        studentName: '张同学',
         awardName: '一等奖',
         rank: 1,
         score: 96,
@@ -34,6 +36,7 @@ test('result utils should keep all results when competition id is empty', () => 
 
   assert.equal(cards.length, 2)
   assert.equal(cards[0].title, '创新赛 A')
+  assert.equal(cards[0].winnerText, '张同学 · S20260001')
   assert.equal(cards[1].title, '创新赛 B')
 })
 
@@ -46,6 +49,8 @@ test('result utils should filter to a single competition when competition id is 
       {
         id: 1,
         competitionId: 8,
+        studentNo: 'S20260001',
+        studentName: '张同学',
         awardName: '一等奖',
         rank: 1,
         score: 96,
@@ -72,5 +77,6 @@ test('result utils should filter to a single competition when competition id is 
   assert.equal(cards[0].competitionId, 8)
   assert.equal(cards[0].title, '创新赛 A')
   assert.equal(cards[0].rankText, '第 1 名')
+  assert.equal(cards[0].winnerText, '张同学 · S20260001')
   assert.equal(cards[0].publishedAtText, '2026-03-18 10:20')
 })

@@ -46,6 +46,12 @@ public class AppRegistrationController {
     return ApiResponse.success(registrationService.findByCompetitionAndUser(competitionId, userId));
   }
 
+  @GetMapping("/user/{userId}")
+  public ApiResponse<List<RegistrationSummary>> listByUser(@PathVariable Long userId) {
+    AuthContext.requireUser(userId);
+    return ApiResponse.success(registrationService.listByUser(userId));
+  }
+
   @PostMapping("/{registrationId}/cancel")
   public ApiResponse<Map<String, Boolean>> cancel(
     @PathVariable Long registrationId,

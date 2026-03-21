@@ -1,4 +1,6 @@
 const { completeDailyCheckin, fetchDailyTaskOverview } = require('../../services/daily-task')
+const { buildUrl } = require('../../services/http')
+const { fetchHomeBanners } = require('../../services/system')
 const { getRoleCode, getSession, logoutSession, requireLogin } = require('../../utils/auth')
 const { buildHomeMenus, HOME_MENU_TITLE_MAP, resolveHomeRoute, resolveOverviewRoute } = require('../../utils/home')
 const { buildOverviewCards, resolveDailyCheckinLabel, resolveShareTaskLabel, summarizeTaskProgress } = require('../../utils/task')
@@ -35,6 +37,7 @@ Page({
     userId: 0,
     displayName: '',
     menuCards: [],
+    banners: [],
     taskProgress: '登录后可查看今日任务状态',
     checkinLabel: '立即签到',
     shareLabel: '分享比赛得积分',
@@ -54,7 +57,25 @@ Page({
       displayName: resolveDisplayName(session),
       menuCards: buildMenuCards(roleCode)
     })
+    this.loadBanners()
     this.loadDailyOverview()
+  },
+
+  async loadBanners() {
+    try {
+      const banners = await fetchHomeBanners()
+      this.setData({
+        banners: banners.map((item) => ({
+          ...item,
+          imageUrl: item.imageUrl ? buildUrl(item.imageUrl) : '',
+          jumpPath: item.jumpPath || ''
+        }))
+      })
+    } catch (error) {
+      this.setData({
+        banners: []
+      })
+    }
   },
 
   async loadDailyOverview() {
@@ -93,6 +114,16 @@ Page({
     const cardKey = event.currentTarget.dataset.key
     wx.navigateTo({
       url: resolveOverviewRoute(cardKey)
+    })
+  },
+
+  openBanner(event) {
+    const jumpPath = event.currentTarget.dataset.path
+    if (!jumpPath) {
+      return
+    }
+    wx.navigateTo({
+      url: jumpPath
     })
   },
 

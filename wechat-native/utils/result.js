@@ -12,6 +12,9 @@ function buildAwardCards(options) {
   return filteredResults.map((item) => ({
     ...item,
     title: titleMap[item.competitionId] || `比赛 #${item.competitionId}`,
+    winnerText: item.studentName
+      ? `${item.studentName}${item.studentNo ? ` · ${item.studentNo}` : ''}`
+      : '',
     rankText: `第 ${item.rank} 名`,
     publishedAtText: formatCompetitionDateTime(item.publishedAt)
   }))

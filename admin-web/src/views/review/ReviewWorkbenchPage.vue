@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+import { buildAssetUrl } from '@/api/http'
 import {
   fetchManagedCompetitions,
   type CompetitionManageItem
@@ -158,6 +159,34 @@ function fillStudentId(studentId: number) {
 
 function resolveReviewerName(value: string | null) {
   return value?.trim() ? value : '未分配'
+}
+
+function resolveTaskMeta(item: ReviewTaskItem) {
+  const pieces = [`v${item.versionNo}`]
+  if (item.submittedAt) {
+    pieces.push(`提交于 ${formatDateTime(item.submittedAt)}`)
+  }
+  return pieces.join(' · ')
+}
+
+function buildTaskDownloadName(item: ReviewTaskItem) {
+  const extensionMatch = item.fileUrl.match(/\.[a-z0-9]+$/i)
+  const extension = extensionMatch ? extensionMatch[0] : ''
+  return `submission-${item.submissionId}-v${item.versionNo}${extension}`
+}
+
+function downloadTaskFile(item: ReviewTaskItem) {
+  if (!item.fileUrl) {
+    reviewError.value = '当前作品暂未生成可下载文件'
+    return
+  }
+
+  reviewError.value = ''
+  const anchor = document.createElement('a')
+  anchor.href = buildAssetUrl(item.fileUrl)
+  anchor.download = buildTaskDownloadName(item)
+  anchor.rel = 'noopener'
+  anchor.click()
 }
 
 function handleTaskSelection() {
@@ -406,15 +435,22 @@ onMounted(() => {
           <p>当前比赛还没有提交记录，待有作品上传后即可在这里完成评审。</p>
         </article>
 
-        <article v-for="item in tasks" :key="item.submissionId" class="task-card">
+        <article
+          v-for="item in tasks"
+          :key="item.submissionId"
+          class="task-card clickable-task-card"
+          @click="downloadTaskFile(item)"
+        >
           <h3>作品 #{{ item.submissionId }}</h3>
           <p>学生 {{ item.studentId }} · {{ resolveReviewerName(item.reviewerName) }}</p>
           <strong>{{ item.status }}</strong>
+          <small>{{ resolveTaskMeta(item) }}</small>
           <p v-if="item.reviewComment" class="review-note">{{ item.reviewComment }}</p>
           <small v-if="item.suggestedScore !== null">建议分数 {{ item.suggestedScore }}</small>
           <small v-if="item.reviewedAt">完成时间 {{ formatDateTime(item.reviewedAt) }}</small>
-          <button type="button" class="mini-button" @click="pickTask(item)">带入评审与发布表单</button>
-          <button type="button" class="mini-button secondary-mini" @click="fillStudentId(item.studentId)">只带入学生</button>
+          <small class="download-hint">点击作品卡片即可下载评审文件</small>
+          <button type="button" class="mini-button" @click.stop="pickTask(item)">带入评审与发布表单</button>
+          <button type="button" class="mini-button secondary-mini" @click.stop="fillStudentId(item.studentId)">只带入学生</button>
         </article>
       </div>
 
@@ -583,6 +619,16 @@ onMounted(() => {
   color: #7a8793;
 }
 
+.clickable-task-card {
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.clickable-task-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 28px 68px rgba(33, 50, 68, 0.12);
+}
+
 .review-note {
   margin-top: 12px;
 }
@@ -615,5 +661,9 @@ onMounted(() => {
   margin-left: 8px;
   background: #eef3f8;
   color: #4f6273;
+}
+
+.download-hint {
+  color: #9f6230;
 }
 </style>

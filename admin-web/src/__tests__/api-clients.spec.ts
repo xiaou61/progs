@@ -180,7 +180,13 @@ describe('admin api clients', () => {
         json: async () => ({
           code: 0,
           message: 'ok',
-          data: [{ id: 1, title: '春季比赛季主视觉', status: 'ENABLED', jumpPath: '/pages/competition/list/index' }]
+          data: [{
+            id: 1,
+            title: '春季比赛季主视觉',
+            status: 'ENABLED',
+            jumpPath: '/pages/competition/list/index',
+            imageUrl: '/uploads/banners/banner-1.png'
+          }]
         })
       } as Response)
       .mockResolvedValueOnce({
@@ -203,6 +209,7 @@ describe('admin api clients', () => {
     expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/admin/banners', { method: 'GET' })
     expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/admin/configs', { method: 'GET' })
     expect(banners[0]?.jumpPath).toBe('/pages/competition/list/index')
+    expect(banners[0]?.imageUrl).toBe('/uploads/banners/banner-1.png')
     expect(config.platformName).toBe('校园师生比赛管理平台')
   })
 
@@ -218,7 +225,8 @@ describe('admin api clients', () => {
             id: 1,
             title: '春季比赛季主视觉-更新',
             status: 'DISABLED',
-            jumpPath: '/pages/home/index'
+            jumpPath: '',
+            imageUrl: '/uploads/banners/banner-2.png'
           }
         })
       } as Response)
@@ -239,7 +247,8 @@ describe('admin api clients', () => {
     const banner = await updateBanner(1, {
       title: '春季比赛季主视觉-更新',
       status: 'DISABLED',
-      jumpPath: '/pages/home/index'
+      jumpPath: '',
+      imageUrl: '/uploads/banners/banner-2.png'
     })
     const config = await updateSystemConfig({
       platformName: '校园师生比赛管理平台 Pro',
@@ -256,7 +265,8 @@ describe('admin api clients', () => {
       body: JSON.stringify({
         title: '春季比赛季主视觉-更新',
         status: 'DISABLED',
-        jumpPath: '/pages/home/index'
+        jumpPath: '',
+        imageUrl: '/uploads/banners/banner-2.png'
       })
     })
     expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/admin/configs', {
@@ -272,6 +282,7 @@ describe('admin api clients', () => {
       })
     })
     expect(banner.status).toBe('DISABLED')
+    expect(banner.imageUrl).toBe('/uploads/banners/banner-2.png')
     expect(config.pointsEnabled).toBe(false)
   })
 
@@ -288,6 +299,9 @@ describe('admin api clients', () => {
               competitionId: 8,
               submissionId: 12,
               studentId: 2001,
+              fileUrl: '/uploads/submissions/work-v1.pptx',
+              versionNo: 1,
+              submittedAt: '2026-03-17T15:20:00',
               reviewerName: '默认评委组',
               status: 'PENDING',
               reviewComment: null,
@@ -327,6 +341,9 @@ describe('admin api clients', () => {
     expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/admin/reviews/tasks?competitionId=8', { method: 'GET' })
     expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/admin/scores/competition/8', { method: 'GET' })
     expect(tasks[0]?.submissionId).toBe(12)
+    expect(tasks[0]?.fileUrl).toBe('/uploads/submissions/work-v1.pptx')
+    expect(tasks[0]?.versionNo).toBe(1)
+    expect(tasks[0]?.submittedAt).toBe('2026-03-17T15:20:00')
     expect(tasks[0]?.reviewComment).toBeNull()
     expect(scores[0]?.points).toBe(30)
     expect(scores[0]?.certificateNo).toBe('CERT-8-2001-1')

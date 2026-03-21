@@ -1,18 +1,21 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { fetchBanners, type BannerItem, updateBanner } from '@/api/system'
+import { buildAssetUrl } from '@/api/http'
+import { fetchBanners, type BannerItem, updateBanner, uploadBannerImage } from '@/api/system'
 
 const banners = ref<BannerItem[]>([])
 const selectedBannerId = ref<number | null>(null)
 const loading = ref(false)
 const saving = ref(false)
+const imageUploading = ref(false)
 const error = ref('')
 const success = ref('')
 
 const form = reactive({
   title: '',
   status: 'ENABLED',
-  jumpPath: ''
+  jumpPath: '',
+  imageUrl: null as string | null
 })
 
 function clearNotice() {
@@ -25,6 +28,7 @@ function applyBanner(banner: BannerItem | null) {
   form.title = banner?.title ?? ''
   form.status = banner?.status ?? 'ENABLED'
   form.jumpPath = banner?.jumpPath ?? ''
+  form.imageUrl = banner?.imageUrl ?? null
   clearNotice()
 }
 
@@ -57,10 +61,30 @@ function validateForm() {
   if (!form.title.trim()) {
     return '轮播图标题不能为空'
   }
-  if (!form.jumpPath.trim()) {
-    return '跳转路径不能为空'
-  }
   return ''
+}
+
+async function handleImageChange(event: Event) {
+  clearNotice()
+  const target = event.target as HTMLInputElement | null
+  const file = target?.files?.[0]
+  if (!file) {
+    return
+  }
+
+  imageUploading.value = true
+  try {
+    const uploaded = await uploadBannerImage(file)
+    form.imageUrl = uploaded.imageUrl
+    success.value = `已上传图片 ${uploaded.originalFileName}`
+  } catch (uploadError) {
+    error.value = uploadError instanceof Error ? uploadError.message : '上传轮播图图片失败'
+  } finally {
+    imageUploading.value = false
+    if (target) {
+      target.value = ''
+    }
+  }
 }
 
 async function handleSubmit() {
@@ -81,7 +105,8 @@ async function handleSubmit() {
     const updated = await updateBanner(selectedBannerId.value, {
       title: form.title.trim(),
       status: form.status,
-      jumpPath: form.jumpPath.trim()
+      jumpPath: form.jumpPath.trim(),
+      imageUrl: form.imageUrl
     })
     success.value = `已更新轮播图 ${updated.title}`
     await loadBanners(updated.id)
@@ -103,7 +128,7 @@ onMounted(() => {
       <div>
         <p class="eyebrow">Banner</p>
         <h1>轮播图管理</h1>
-        <p>运营位不再只是查看，选中一条轮播图即可调整标题、状态和跳转路径。</p>
+        <p>运营位现在支持本地图片上传，跳转路径可留空，留空时首页仅展示图片不跳转。</p>
       </div>
       <button class="ghost-button" type="button" :disabled="loading" @click="loadBanners(selectedBannerId)">
         {{ loading ? '刷新中...' : '刷新数据' }}
@@ -135,8 +160,9 @@ onMounted(() => {
             type="button"
             @click="applyBanner(item)"
           >
+            <img v-if="item.imageUrl" :src="buildAssetUrl(item.imageUrl)" class="banner-thumb" :alt="item.title" />
             <h3>{{ item.title }}</h3>
-            <p>跳转路径：{{ item.jumpPath }}</p>
+            <p>跳转路径：{{ item.jumpPath || '留空时仅展示，不跳转' }}</p>
             <strong>{{ item.status === 'ENABLED' ? '启用中' : '已停用' }}</strong>
           </button>
         </section>
@@ -165,8 +191,16 @@ onMounted(() => {
           </label>
 
           <label class="field">
-            <span>跳转路径</span>
-            <input v-model="form.jumpPath" type="text" placeholder="例如 /pages/home/index" />
+            <span>轮播图图片</span>
+            <input type="file" accept="image/*" :disabled="imageUploading" @change="handleImageChange" />
+            <p class="field-tip">{{ imageUploading ? '图片上传中...' : '支持直接上传本地图片文件' }}</p>
+            <img v-if="form.imageUrl" :src="buildAssetUrl(form.imageUrl)" class="banner-preview" :alt="form.title || '轮播图预览'" />
+            <p v-else class="field-tip">当前还没有上传图片，首页会回退成文字轮播卡片。</p>
+          </label>
+
+          <label class="field">
+            <span>跳转路径（可选）</span>
+            <input v-model="form.jumpPath" type="text" placeholder="例如 /pages/home/index；留空则不跳转" />
           </label>
 
           <button class="primary-button full-button" type="button" :disabled="saving" @click="handleSubmit">
@@ -293,6 +327,22 @@ h3 {
   cursor: pointer;
 }
 
+.banner-thumb,
+.banner-preview {
+  width: 100%;
+  border-radius: 16px;
+  object-fit: cover;
+}
+
+.banner-thumb {
+  height: 140px;
+  margin-bottom: 14px;
+}
+
+.banner-preview {
+  max-height: 220px;
+}
+
 .banner-card.active {
   border-color: rgba(204, 109, 55, 0.26);
   background: linear-gradient(180deg, rgba(255, 247, 240, 0.96), rgba(248, 250, 252, 0.96));
@@ -320,6 +370,12 @@ h3 {
 .field span {
   color: #3a4655;
   font-weight: 600;
+}
+
+.field-tip {
+  margin: 0;
+  color: #6a7785;
+  font-size: 13px;
 }
 
 input,
