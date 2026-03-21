@@ -28,7 +28,7 @@ test('competition utilities should format route and status text', () => {
 })
 
 test('home and task utilities should expose menu metadata and task labels', () => {
-  const { buildHomeMenus, HOME_MENU_TITLE_MAP, resolveHomeRoute } = require('../utils/home')
+  const { buildHomeMenus, HOME_MENU_TITLE_MAP, resolveHomeRoute, resolveOverviewRoute } = require('../utils/home')
   const {
     buildOverviewCards,
     formatTaskTime,
@@ -46,6 +46,10 @@ test('home and task utilities should expose menu metadata and task labels', () =
     'my-profile'
   ])
   assert.equal(resolveHomeRoute('my-profile'), '/pages/profile/index')
+  assert.equal(resolveOverviewRoute('my-competitions'), '/pages/competition/list/index')
+  assert.equal(resolveOverviewRoute('submitted-works'), '/pages/competition/portfolio/index?tab=works')
+  assert.equal(resolveOverviewRoute('award-results'), '/pages/competition/portfolio/index?tab=awards')
+  assert.equal(resolveOverviewRoute('total-points'), '/pages/points/index')
   assert.equal(HOME_MENU_TITLE_MAP['competition-manage'], '发布比赛')
   assert.equal(resolveDailyCheckinLabel(false), '立即签到')
   assert.equal(resolveShareTaskLabel(true), '今日已分享')
@@ -66,10 +70,10 @@ test('home and task utilities should expose menu metadata and task labels', () =
       totalPoints: 18
     }),
     [
-      { label: '我的比赛', value: '4 场' },
-      { label: '已交作品', value: '3 份' },
-      { label: '获奖次数', value: '2 次' },
-      { label: '总积分', value: '18 分' }
+      { key: 'my-competitions', label: '我的比赛', value: '4 场' },
+      { key: 'submitted-works', label: '已交作品', value: '3 份' },
+      { key: 'award-results', label: '获奖次数', value: '2 次' },
+      { key: 'total-points', label: '总积分', value: '18 分' }
     ]
   )
 })

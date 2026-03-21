@@ -14,10 +14,26 @@ function buildVersionCards(items, userId) {
     .map((item, index) => ({
       id: item.id,
       label: `v${item.versionNo}`,
-      fileName: item.fileUrl,
+      fileName: resolveWorkFileName(item.fileUrl),
+      fileUrl: item.fileUrl,
       status: index === 0 ? '当前版本' : '历史版本',
       submittedAt: formatCompetitionDateTime(item.submittedAt)
     }))
+}
+
+function resolveWorkFileName(fileUrl) {
+  if (!fileUrl) {
+    return '未命名文件'
+  }
+  const segments = String(fileUrl).split('/')
+  return segments[segments.length - 1] || String(fileUrl)
+}
+
+function buildSelectedFileSummary(fileName, sizeLabel) {
+  if (!fileName) {
+    return '还没有选择作品文件'
+  }
+  return sizeLabel ? `已选择 ${fileName}，大小 ${sizeLabel}` : `已选择 ${fileName}`
 }
 
 Page({
@@ -29,6 +45,7 @@ Page({
     selectedFilePath: '',
     selectedFileName: '',
     selectedFileSizeLabel: '',
+    selectedFileSummary: '还没有选择作品文件',
     reuploadAllowed: false,
     loading: false,
     submitting: false,
@@ -83,10 +100,11 @@ Page({
         competitionTitle: currentCompetition ? currentCompetition.title : this.data.competitionTitle,
         competitionDesc: currentCompetition ? currentCompetition.description : this.data.competitionDesc,
         versionCards,
-        fileUrl: versionCards.length > 0 ? versionCards[0].fileName : '',
+        fileUrl: versionCards.length > 0 ? versionCards[0].fileUrl : '',
         selectedFilePath: '',
         selectedFileName: '',
-        selectedFileSizeLabel: ''
+        selectedFileSizeLabel: '',
+        selectedFileSummary: buildSelectedFileSummary('', '')
       })
     } catch (error) {
       this.setData({
@@ -121,7 +139,8 @@ Page({
         this.setData({
           selectedFilePath: file.path || '',
           selectedFileName: file.name || '未命名文件',
-          selectedFileSizeLabel: formatFileSize(file.size)
+          selectedFileSizeLabel: formatFileSize(file.size),
+          selectedFileSummary: buildSelectedFileSummary(file.name || '未命名文件', formatFileSize(file.size))
         })
       },
       fail: (error) => {

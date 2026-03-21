@@ -30,7 +30,13 @@
       <text class="list-meta">比赛参与与成果汇总</text>
     </view>
     <view class="grid-2 overview-grid">
-      <view wx:for="{{overviewCards}}" wx:key="label" class="list-item stat-card">
+      <view
+        wx:for="{{overviewCards}}"
+        wx:key="key"
+        class="list-item stat-card clickable-card"
+        data-key="{{item.key}}"
+        bindtap="openOverviewCard"
+      >
         <text class="list-title">{{item.value}}</text>
         <text class="list-meta">{{item.label}}</text>
       </view>

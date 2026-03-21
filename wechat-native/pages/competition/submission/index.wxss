@@ -1,3 +1,30 @@
+.step-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  margin-bottom: 22rpx;
+}
+
+.step-item {
+  padding: 20rpx;
+  border-radius: 18rpx;
+  background: #f7f9fb;
+}
+
+.step-title {
+  display: block;
+  margin-top: 10rpx;
+  font-weight: 600;
+  color: #1f2d3d;
+}
+
+.file-summary-card {
+  margin-bottom: 12rpx;
+  padding: 20rpx;
+  border-radius: 18rpx;
+  background: #f7f9fb;
+}
+
 .version-list {
   display: flex;
   flex-direction: column;

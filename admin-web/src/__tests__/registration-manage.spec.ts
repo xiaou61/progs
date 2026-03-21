@@ -3,6 +3,7 @@ import {
   fetchCompetitionRegistrations,
   manualAddRegistration,
   markRegistrationAttendance,
+  reviewRegistrationCheckin,
   rejectRegistration
 } from '@/api/registration-manage'
 
@@ -31,7 +32,12 @@ describe('registration manage api', () => {
               userId: 2001,
               status: 'REGISTERED',
               attendanceStatus: 'PENDING',
-              remark: null
+              remark: null,
+              checkinStatus: 'PENDING',
+              checkinMethod: 'QRCODE',
+              checkinSubmittedAt: '2026-03-21T09:30:00',
+              checkinReviewedAt: null,
+              checkinReviewRemark: null
             }
           ]
         })
@@ -72,7 +78,7 @@ describe('registration manage api', () => {
     expect(registrationId).toBe(42)
   })
 
-  it('should reject registration and mark attendance', async () => {
+  it('should reject registration, review checkin and mark attendance', async () => {
     const fetchMock = vi.mocked(fetch)
     fetchMock
       .mockResolvedValueOnce({
@@ -91,12 +97,23 @@ describe('registration manage api', () => {
           code: 0,
           message: 'ok',
           data: {
+            reviewed: true
+          }
+        })
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          code: 0,
+          message: 'ok',
+          data: {
             marked: true
           }
         })
       } as Response)
 
     const rejected = await rejectRegistration(41, '资料不完整')
+    const reviewed = await reviewRegistrationCheckin(41, 'APPROVED')
     const marked = await markRegistrationAttendance(42, 'PRESENT')
 
     expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/admin/registrations/41/reject', {
@@ -108,7 +125,16 @@ describe('registration manage api', () => {
         reason: '资料不完整'
       })
     })
-    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/admin/registrations/42/attendance', {
+    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/admin/registrations/41/checkin-review', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        status: 'APPROVED'
+      })
+    })
+    expect(fetchMock).toHaveBeenNthCalledWith(3, '/api/admin/registrations/42/attendance', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -118,6 +144,7 @@ describe('registration manage api', () => {
       })
     })
     expect(rejected).toBe(true)
+    expect(reviewed).toBe(true)
     expect(marked).toBe(true)
   })
 })

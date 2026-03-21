@@ -17,6 +17,10 @@
   background: linear-gradient(180deg, #fbfdff, #f5f8fb);
 }
 
+.clickable-card {
+  border: 2rpx solid rgba(233, 239, 245, 0.95);
+}
+
 .menu-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

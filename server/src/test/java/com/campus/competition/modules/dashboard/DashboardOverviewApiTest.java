@@ -176,6 +176,68 @@ class DashboardOverviewApiTest {
       .andExpect(content().string(containsString("王老师,数据大屏实战赛,PUBLISHED,1,1,1,30")));
   }
 
+  @Test
+  void shouldPrioritizePinnedCompetitionsWhenDashboardMetricsAreEqual() throws Exception {
+    LocalDateTime now = LocalDateTime.now();
+    String signupStartAt = now.minusDays(1).withSecond(0).withNano(0).toString();
+    String signupEndAt = now.plusHours(6).withSecond(0).withNano(0).toString();
+    String startAt = now.minusHours(1).withSecond(0).withNano(0).toString();
+    String endAt = now.plusDays(1).withSecond(0).withNano(0).toString();
+
+    AuthSession adminSession = AuthTestSupport.login(mockMvc, objectMapper, "A20260001", "Abcd1234", "ADMIN");
+    AuthSession teacherSession = AuthTestSupport.login(mockMvc, objectMapper, "T20260001", "Abcd1234", "TEACHER");
+    long teacherId = teacherSession.userId();
+
+    long pinnedCompetitionId = extractLongField(
+      mockMvc.perform(AuthTestSupport.authorized(
+          post("/api/admin/competitions")
+            .contentType(APPLICATION_JSON)
+            .content("""
+              {
+                "organizerId": %d,
+                "title": "置顶优先展示赛",
+                "description": "用于验证后台看板排序",
+                "signupStartAt": "%s",
+                "signupEndAt": "%s",
+                "startAt": "%s",
+                "endAt": "%s",
+                "quota": 20,
+                "recommended": true,
+                "pinned": true
+              }
+              """.formatted(teacherId, signupStartAt, signupEndAt, startAt, endAt)),
+          adminSession))
+        .andExpect(status().isOk())
+        .andReturn(),
+      "competitionId"
+    );
+
+    mockMvc.perform(AuthTestSupport.authorized(
+        post("/api/admin/competitions")
+          .contentType(APPLICATION_JSON)
+          .content("""
+            {
+              "organizerId": %d,
+              "title": "普通展示赛",
+              "description": "用于验证非置顶比赛不会排到前面",
+              "signupStartAt": "%s",
+              "signupEndAt": "%s",
+              "startAt": "%s",
+              "endAt": "%s",
+              "quota": 20
+            }
+            """.formatted(teacherId, signupStartAt, signupEndAt, startAt, endAt)),
+        adminSession))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.code").value(0));
+
+    mockMvc.perform(AuthTestSupport.authorized(get("/api/admin/dashboard/overview"), adminSession))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.code").value(0))
+      .andExpect(jsonPath("$.data.topCompetitions[0].competitionId").value(pinnedCompetitionId))
+      .andExpect(jsonPath("$.data.topCompetitions[0].pinned").value(true));
+  }
+
   private long extractLongField(MvcResult result, String fieldName) throws Exception {
     return extractLongValue(result.getResponse().getContentAsString(), "/data/" + fieldName);
   }

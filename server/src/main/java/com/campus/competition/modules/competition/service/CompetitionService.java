@@ -65,14 +65,15 @@ public class CompetitionService {
     if (competitionMapper != null) {
       CompetitionEntity entity = buildEntity(command.organizerId(), command.title(), command.description(),
         command.signupStartAt(), command.signupEndAt(), command.startAt(), command.endAt(), command.quota(), "PUBLISHED",
-        settings.participantType(), settings.advisorTeacherId());
+        settings.participantType(), settings.advisorTeacherId(), command.recommended(), command.pinned());
       competitionMapper.insert(entity);
       return entity.getId();
     }
     long id = idGenerator.getAndIncrement();
     CompetitionDetail detail = buildDetail(id, command.organizerId(), command.title(), command.description(),
       command.signupStartAt(), command.signupEndAt(), command.startAt(), command.endAt(), command.quota(), "PUBLISHED",
-      false, false, settings.participantType(), settings.advisorTeacherId(), settings.advisorTeacherName());
+      normalizeFeatureFlag(command.recommended()), normalizeFeatureFlag(command.pinned()),
+      settings.participantType(), settings.advisorTeacherId(), settings.advisorTeacherName());
     competitions.put(id, detail);
     return id;
   }
@@ -81,27 +82,32 @@ public class CompetitionService {
     if (competitionMapper != null) {
       return competitionMapper.selectList(Wrappers.<CompetitionEntity>lambdaQuery()
           .eq(CompetitionEntity::getStatus, "PUBLISHED")
-          .orderByAsc(CompetitionEntity::getId))
+          .orderByDesc(CompetitionEntity::getIsPinned)
+          .orderByDesc(CompetitionEntity::getIsRecommended)
+          .orderByDesc(CompetitionEntity::getId))
         .stream()
         .map(this::toSummary)
         .toList();
     }
     return competitions.values().stream()
       .filter(item -> "PUBLISHED".equals(item.status()))
-      .sorted(Comparator.comparing(CompetitionDetail::id))
+      .sorted(managedCompetitionComparator())
       .map(this::toSummary)
       .toList();
   }
 
   public List<CompetitionDraftSummary> listManagedCompetitions() {
     if (competitionMapper != null) {
-      return competitionMapper.selectList(Wrappers.<CompetitionEntity>lambdaQuery().orderByDesc(CompetitionEntity::getId))
+      return competitionMapper.selectList(Wrappers.<CompetitionEntity>lambdaQuery()
+          .orderByDesc(CompetitionEntity::getIsPinned)
+          .orderByDesc(CompetitionEntity::getIsRecommended)
+          .orderByDesc(CompetitionEntity::getId))
         .stream()
         .map(this::toManageSummary)
         .toList();
     }
     return competitions.values().stream()
-      .sorted(Comparator.comparing(CompetitionDetail::id).reversed())
+      .sorted(managedCompetitionComparator())
       .map(this::toManageSummary)
       .toList();
   }
@@ -113,6 +119,8 @@ public class CompetitionService {
     if (competitionMapper != null) {
       return competitionMapper.selectList(Wrappers.<CompetitionEntity>lambdaQuery()
           .eq(CompetitionEntity::getOrganizerId, organizerId)
+          .orderByDesc(CompetitionEntity::getIsPinned)
+          .orderByDesc(CompetitionEntity::getIsRecommended)
           .orderByDesc(CompetitionEntity::getId))
         .stream()
         .map(this::toManageSummary)
@@ -120,7 +128,7 @@ public class CompetitionService {
     }
     return competitions.values().stream()
       .filter(item -> organizerId.equals(item.organizerId()))
-      .sorted(Comparator.comparing(CompetitionDetail::id).reversed())
+      .sorted(managedCompetitionComparator())
       .map(this::toManageSummary)
       .toList();
   }
@@ -144,14 +152,15 @@ public class CompetitionService {
     if (competitionMapper != null) {
       CompetitionEntity entity = buildEntity(command.organizerId(), command.title(), command.description(),
         command.signupStartAt(), command.signupEndAt(), command.startAt(), command.endAt(), command.quota(), "DRAFT",
-        settings.participantType(), settings.advisorTeacherId());
+        settings.participantType(), settings.advisorTeacherId(), command.recommended(), command.pinned());
       competitionMapper.insert(entity);
       return entity.getId();
     }
     long id = idGenerator.getAndIncrement();
     CompetitionDetail detail = buildDetail(id, command.organizerId(), command.title(), command.description(),
       command.signupStartAt(), command.signupEndAt(), command.startAt(), command.endAt(), command.quota(), "DRAFT",
-      false, false, settings.participantType(), settings.advisorTeacherId(), settings.advisorTeacherName());
+      normalizeFeatureFlag(command.recommended()), normalizeFeatureFlag(command.pinned()),
+      settings.participantType(), settings.advisorTeacherId(), settings.advisorTeacherName());
     competitions.put(id, detail);
     return id;
   }
@@ -170,7 +179,9 @@ public class CompetitionService {
       command.endAt(),
       command.quota(),
       command.participantType(),
-      command.advisorTeacherId()
+      command.advisorTeacherId(),
+      command.recommended(),
+      command.pinned()
     ));
   }
 
@@ -188,7 +199,9 @@ public class CompetitionService {
       command.endAt(),
       command.quota(),
       command.participantType(),
-      command.advisorTeacherId()
+      command.advisorTeacherId(),
+      command.recommended(),
+      command.pinned()
     ));
   }
 
@@ -224,6 +237,8 @@ public class CompetitionService {
       entity.setParticipantType(settings.participantType());
       entity.setAdvisorTeacherId(settings.advisorTeacherId());
       entity.setStatus(status);
+      entity.setIsRecommended(command.recommended() != null ? command.recommended() : entity.getIsRecommended());
+      entity.setIsPinned(command.pinned() != null ? command.pinned() : entity.getIsPinned());
       entity.setUpdatedAt(LocalDateTime.now());
       competitionMapper.updateById(entity);
       return toDetail(entity);
@@ -247,8 +262,8 @@ public class CompetitionService {
       command.endAt(),
       command.quota(),
       status,
-      existing.recommended(),
-      existing.pinned(),
+      command.recommended() != null ? command.recommended() : existing.recommended(),
+      command.pinned() != null ? command.pinned() : existing.pinned(),
       settings.participantType(),
       settings.advisorTeacherId(),
       settings.advisorTeacherName()
@@ -273,7 +288,9 @@ public class CompetitionService {
       command.quota(),
       command.status(),
       command.participantType(),
-      command.advisorTeacherId()
+      command.advisorTeacherId(),
+      command.recommended(),
+      command.pinned()
     ));
   }
 
@@ -507,7 +524,9 @@ public class CompetitionService {
     Integer quota,
     String status,
     String participantType,
-    Long advisorTeacherId
+    Long advisorTeacherId,
+    Boolean recommended,
+    Boolean pinned
   ) {
     CompetitionEntity entity = new CompetitionEntity();
     entity.setOrganizerId(organizerId);
@@ -521,8 +540,8 @@ public class CompetitionService {
     entity.setParticipantType(participantType);
     entity.setAdvisorTeacherId(advisorTeacherId);
     entity.setStatus(status);
-    entity.setIsRecommended(false);
-    entity.setIsPinned(false);
+    entity.setIsRecommended(normalizeFeatureFlag(recommended));
+    entity.setIsPinned(normalizeFeatureFlag(pinned));
     entity.setUpdatedAt(LocalDateTime.now());
     return entity;
   }
@@ -561,6 +580,17 @@ public class CompetitionService {
       advisorTeacherId,
       advisorTeacherName
     );
+  }
+
+  private boolean normalizeFeatureFlag(Boolean value) {
+    return Boolean.TRUE.equals(value);
+  }
+
+  private Comparator<CompetitionDetail> managedCompetitionComparator() {
+    return Comparator
+      .comparing(CompetitionDetail::pinned, Comparator.reverseOrder())
+      .thenComparing(CompetitionDetail::recommended, Comparator.reverseOrder())
+      .thenComparing(CompetitionDetail::id, Comparator.reverseOrder());
   }
 
   private CompetitionParticipantSettings resolveParticipantSettingsForCreate(

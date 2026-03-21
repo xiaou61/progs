@@ -123,6 +123,16 @@ public class RegistrationService {
     return findInMemoryByCompetitionAndUser(competitionId, userId);
   }
 
+  public RegistrationSummary getRequiredRegistration(Long registrationId) {
+    if (registrationId == null) {
+      throw new IllegalArgumentException("报名记录不能为空");
+    }
+    if (registrationMapper != null) {
+      return toSummary(getRequiredEntity(registrationId));
+    }
+    return getRequiredInMemoryRegistration(registrationId);
+  }
+
   public List<RegistrationSummary> listByUser(Long userId) {
     if (userId == null) {
       throw new IllegalArgumentException("用户不能为空");

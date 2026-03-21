@@ -15,10 +15,10 @@ function summarizeTaskProgress(task) {
 
 function buildOverviewCards(overview) {
   return [
-    { label: '我的比赛', value: `${overview.registeredCompetitionCount} 场` },
-    { label: '已交作品', value: `${overview.submittedWorkCount} 份` },
-    { label: '获奖次数', value: `${overview.awardCount} 次` },
-    { label: '总积分', value: `${overview.totalPoints} 分` }
+    { key: 'my-competitions', label: '我的比赛', value: `${overview.registeredCompetitionCount} 场` },
+    { key: 'submitted-works', label: '已交作品', value: `${overview.submittedWorkCount} 份` },
+    { key: 'award-results', label: '获奖次数', value: `${overview.awardCount} 次` },
+    { key: 'total-points', label: '总积分', value: `${overview.totalPoints} 分` }
   ]
 }
 

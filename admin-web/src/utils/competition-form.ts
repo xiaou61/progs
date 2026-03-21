@@ -13,6 +13,11 @@ export type CompetitionFormValues = {
   advisorTeacherId: number | null
 }
 
+export type CompetitionFeatureValues = {
+  recommended: boolean
+  pinned: boolean
+}
+
 function toComparableTime(value: string) {
   return new Date(value).getTime()
 }
@@ -49,7 +54,7 @@ export function validateCompetitionForm(form: CompetitionFormValues) {
   return ''
 }
 
-export function buildPublishPayload(form: CompetitionFormValues) {
+export function buildPublishPayload(form: CompetitionFormValues, featureForm: CompetitionFeatureValues) {
   const advisorTeacherId = form.participantType === 'STUDENT_ONLY' && (form.advisorTeacherId ?? 0) > 0
     ? form.advisorTeacherId
     : null
@@ -63,6 +68,8 @@ export function buildPublishPayload(form: CompetitionFormValues) {
     endAt: normalizeDateTime(form.endAt),
     quota: form.quota,
     participantType: form.participantType,
-    advisorTeacherId
+    advisorTeacherId,
+    recommended: featureForm.recommended,
+    pinned: featureForm.pinned
   }
 }

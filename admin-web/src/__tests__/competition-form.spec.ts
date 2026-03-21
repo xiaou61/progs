@@ -38,7 +38,10 @@ describe('competition form', () => {
       advisorTeacherId: 2001
     }
 
-    const competitionId = await publishCompetition(buildPublishPayload(form))
+    const competitionId = await publishCompetition(buildPublishPayload(form, {
+      recommended: true,
+      pinned: true
+    }))
 
     expect(fetchMock).toHaveBeenCalledWith('/api/admin/competitions', {
       method: 'POST',
@@ -55,7 +58,9 @@ describe('competition form', () => {
         endAt: '2026-03-21T18:00:00',
         quota: 200,
         participantType: 'STUDENT_ONLY',
-        advisorTeacherId: 2001
+        advisorTeacherId: 2001,
+        recommended: true,
+        pinned: true
       })
     })
     expect(competitionId).toBe(8)

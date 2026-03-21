@@ -7,6 +7,9 @@ public record CheckinSummary(
   Long competitionId,
   Long userId,
   String method,
-  LocalDateTime checkedAt
+  LocalDateTime checkedAt,
+  String status,
+  String reviewRemark,
+  LocalDateTime reviewedAt
 ) {
 }

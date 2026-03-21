@@ -25,9 +25,12 @@ public class AppCheckinController {
   }
 
   @PostMapping
-  public ApiResponse<Map<String, Boolean>> checkIn(@RequestBody CheckInCommand command) {
+  public ApiResponse<Map<String, Object>> checkIn(@RequestBody CheckInCommand command) {
     AuthContext.requireUser(command == null ? null : command.userId());
-    return ApiResponse.success(Map.of("checked", checkinService.checkIn(command)));
+    return ApiResponse.success(Map.of(
+      "checked", checkinService.checkIn(command),
+      "status", "PENDING"
+    ));
   }
 
   @GetMapping("/competition/{competitionId}")

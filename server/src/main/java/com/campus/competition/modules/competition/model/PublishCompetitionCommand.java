@@ -12,7 +12,9 @@ public record PublishCompetitionCommand(
   LocalDateTime endAt,
   Integer quota,
   String participantType,
-  Long advisorTeacherId
+  Long advisorTeacherId,
+  Boolean recommended,
+  Boolean pinned
 ) {
   public PublishCompetitionCommand(
     Long organizerId,
@@ -24,6 +26,6 @@ public record PublishCompetitionCommand(
     LocalDateTime endAt,
     Integer quota
   ) {
-    this(organizerId, title, description, signupStartAt, signupEndAt, startAt, endAt, quota, null, null);
+    this(organizerId, title, description, signupStartAt, signupEndAt, startAt, endAt, quota, null, null, null, null);
   }
 }

@@ -2,14 +2,17 @@
   <view class="hero">
     <text class="eyebrow">Check In</text>
     <text class="title">现场签到</text>
-    <text class="desc">当前已接入真实签到接口，并可回显当前账号的签到状态。</text>
+    <text class="desc">当前签到改为提交申请制，提交后需要老师确认，后台才会显示已到场。</text>
   </view>
 
   <view class="panel">
     <text class="badge">{{statusLabel}}</text>
     <text class="section-title">{{competitionTitle}}</text>
     <text class="section-desc">{{competitionDesc}}</text>
-    <text wx:if="{{checkedAt}}" class="success-text">签到时间：{{checkedAt}}</text>
+    <text class="muted-text">{{statusDesc}}</text>
+    <text wx:if="{{checkedAt}}" class="success-text">申请时间：{{checkedAt}}</text>
+    <text wx:if="{{reviewedAt}}" class="success-text">处理时间：{{reviewedAt}}</text>
+    <text wx:if="{{reviewRemark}}" class="error-text">驳回原因：{{reviewRemark}}</text>
     <text wx:if="{{error}}" class="error-text">{{error}}</text>
 
     <view class="tip-list">
@@ -18,8 +21,8 @@
       </view>
     </view>
 
-    <button class="primary-btn" loading="{{submitting}}" disabled="{{loading || submitting || !!checkedAt}}" bindtap="submitCheckin">
-      {{checkedAt ? '已完成签到' : (submitting ? '签到中...' : '立即签到')}}
+    <button class="primary-btn" loading="{{submitting}}" disabled="{{loading || submitting || !canSubmit}}" bindtap="submitCheckin">
+      {{submitting ? '提交中...' : submitButtonText}}
     </button>
   </view>
 </view>

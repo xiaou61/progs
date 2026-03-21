@@ -153,6 +153,153 @@ class CompetitionManageApiTest {
       .andExpect(jsonPath("$.data.length()").value(0));
   }
 
+  @Test
+  void shouldPersistFeatureFlagsWithinMainSaveAndSortPinnedCompetitionsFirst() throws Exception {
+    long teacherId = resolveTeacherId();
+    AuthSession adminSession = AuthTestSupport.login(mockMvc, objectMapper, "A20260001", "Abcd1234", "ADMIN");
+    LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
+
+    long olderCompetitionId = extractLongField(
+      mockMvc.perform(AuthTestSupport.authorized(
+          post("/api/admin/competitions")
+            .contentType(APPLICATION_JSON)
+            .content("""
+              {
+                "organizerId": %d,
+                "title": "较早创建的普通比赛",
+                "description": "用于验证置顶排序",
+                "signupStartAt": "%s",
+                "signupEndAt": "%s",
+                "startAt": "%s",
+                "endAt": "%s",
+                "quota": 60,
+                "participantType": "STUDENT_ONLY",
+                "advisorTeacherId": %d
+              }
+              """.formatted(
+              teacherId,
+              now.minusDays(3),
+              now.plusDays(2),
+              now.plusDays(3),
+              now.plusDays(4),
+              teacherId)),
+          adminSession))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.code").value(0))
+        .andReturn(),
+      "competitionId"
+    );
+
+    long pinnedCompetitionId = extractLongField(
+      mockMvc.perform(AuthTestSupport.authorized(
+          post("/api/admin/competitions/draft")
+            .contentType(APPLICATION_JSON)
+            .content("""
+              {
+                "organizerId": %d,
+                "title": "准备置顶的比赛",
+                "description": "先保存草稿，再通过主保存更新置顶",
+                "signupStartAt": "%s",
+                "signupEndAt": "%s",
+                "startAt": "%s",
+                "endAt": "%s",
+                "quota": 80,
+                "participantType": "STUDENT_ONLY",
+                "advisorTeacherId": %d
+              }
+              """.formatted(
+              teacherId,
+              now.minusDays(2),
+              now.plusDays(2),
+              now.plusDays(3),
+              now.plusDays(4),
+              teacherId)),
+          adminSession))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.code").value(0))
+        .andReturn(),
+      "competitionId"
+    );
+
+    mockMvc.perform(AuthTestSupport.authorized(
+        put("/api/admin/competitions/" + pinnedCompetitionId)
+          .contentType(APPLICATION_JSON)
+          .content("""
+            {
+              "organizerId": %d,
+              "title": "准备置顶的比赛",
+              "description": "通过主保存直接写入推荐和置顶状态",
+              "signupStartAt": "%s",
+              "signupEndAt": "%s",
+              "startAt": "%s",
+              "endAt": "%s",
+              "quota": 80,
+              "status": "PUBLISHED",
+              "participantType": "STUDENT_ONLY",
+              "advisorTeacherId": %d,
+              "recommended": true,
+              "pinned": true
+            }
+            """.formatted(
+            teacherId,
+            now.minusDays(2),
+            now.plusDays(2),
+            now.plusDays(3),
+            now.plusDays(4),
+            teacherId)),
+        adminSession))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.code").value(0))
+      .andExpect(jsonPath("$.data.id").value(pinnedCompetitionId))
+      .andExpect(jsonPath("$.data.recommended").value(true))
+      .andExpect(jsonPath("$.data.pinned").value(true));
+
+    long newerCompetitionId = extractLongField(
+      mockMvc.perform(AuthTestSupport.authorized(
+          post("/api/admin/competitions")
+            .contentType(APPLICATION_JSON)
+            .content("""
+              {
+                "organizerId": %d,
+                "title": "较晚创建的普通比赛",
+                "description": "用于验证非置顶比赛不会压过置顶比赛",
+                "signupStartAt": "%s",
+                "signupEndAt": "%s",
+                "startAt": "%s",
+                "endAt": "%s",
+                "quota": 90,
+                "participantType": "STUDENT_ONLY",
+                "advisorTeacherId": %d
+              }
+              """.formatted(
+              teacherId,
+              now.minusDays(1),
+              now.plusDays(2),
+              now.plusDays(3),
+              now.plusDays(4),
+              teacherId)),
+          adminSession))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.code").value(0))
+        .andReturn(),
+      "competitionId"
+    );
+
+    mockMvc.perform(AuthTestSupport.authorized(get("/api/admin/competitions"), adminSession))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.code").value(0))
+      .andExpect(jsonPath("$.data[0].id").value(pinnedCompetitionId))
+      .andExpect(jsonPath("$.data[0].pinned").value(true))
+      .andExpect(jsonPath("$.data[1].id").value(newerCompetitionId))
+      .andExpect(jsonPath("$.data[2].id").value(olderCompetitionId));
+
+    mockMvc.perform(get("/api/app/competitions"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.code").value(0))
+      .andExpect(jsonPath("$.data[0].id").value(pinnedCompetitionId))
+      .andExpect(jsonPath("$.data[0].pinned").value(true));
+  }
+
   private long resolveTeacherId() {
     UserEntity teacher = userMapper.selectOne(Wrappers.<UserEntity>lambdaQuery()
       .eq(UserEntity::getStudentNo, "T20260001"));

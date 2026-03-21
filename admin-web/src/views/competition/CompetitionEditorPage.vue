@@ -204,7 +204,7 @@ async function submitCompetition() {
 
   loading.value = true
   try {
-    const payload = buildPublishPayload(form)
+    const payload = buildPublishPayload(form, featureForm)
     if (selectedCompetitionId.value) {
       await updateCompetition(selectedCompetitionId.value, {
         ...payload,
@@ -232,7 +232,7 @@ async function submitDraft() {
 
   loading.value = true
   try {
-    const payload = buildPublishPayload(form)
+    const payload = buildPublishPayload(form, featureForm)
     if (selectedCompetitionId.value) {
       await updateCompetition(selectedCompetitionId.value, {
         ...payload,

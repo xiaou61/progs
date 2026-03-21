@@ -2,7 +2,7 @@
   <view class="hero">
     <text class="eyebrow">Teacher Manage</text>
     <text class="title">发布与管理比赛</text>
-    <text class="desc">这里支持保存草稿、编辑、推荐置顶和下架。时间请按 YYYY-MM-DDTHH:mm:ss 填写。</text>
+    <text class="desc">这里支持保存草稿、编辑、推荐置顶和下架。所有时间都可以直接点选日期和时分，不需要再手动填写。</text>
   </view>
 
   <view class="panel">
@@ -37,19 +37,75 @@
     </view>
     <view class="field">
       <text class="label">报名开始</text>
-      <input class="input" value="{{form.signupStartAt}}" data-field="form.signupStartAt" placeholder="例如 2026-03-18T09:00:00" bindinput="updateField" />
+      <view class="time-picker-grid">
+        <picker mode="date" value="{{timePickerState.signupStartAt.date || pickerDefaults.date}}" data-field="signupStartAt" bindchange="handleDateChange">
+          <view class="picker-chip">
+            <text class="picker-caption">选择日期</text>
+            <text class="picker-value">{{timePickerState.signupStartAt.date || '点击选择'}}</text>
+          </view>
+        </picker>
+        <picker mode="time" value="{{timePickerState.signupStartAt.time || pickerDefaults.time}}" data-field="signupStartAt" bindchange="handleTimeChange">
+          <view class="picker-chip">
+            <text class="picker-caption">选择时间</text>
+            <text class="picker-value">{{timePickerState.signupStartAt.time || '点击选择'}}</text>
+          </view>
+        </picker>
+      </view>
+      <text class="list-meta">已选：{{timePickerState.signupStartAt.label}}</text>
     </view>
     <view class="field">
       <text class="label">报名截止</text>
-      <input class="input" value="{{form.signupEndAt}}" data-field="form.signupEndAt" placeholder="例如 2026-03-20T18:30:00" bindinput="updateField" />
+      <view class="time-picker-grid">
+        <picker mode="date" value="{{timePickerState.signupEndAt.date || pickerDefaults.date}}" data-field="signupEndAt" bindchange="handleDateChange">
+          <view class="picker-chip">
+            <text class="picker-caption">选择日期</text>
+            <text class="picker-value">{{timePickerState.signupEndAt.date || '点击选择'}}</text>
+          </view>
+        </picker>
+        <picker mode="time" value="{{timePickerState.signupEndAt.time || pickerDefaults.time}}" data-field="signupEndAt" bindchange="handleTimeChange">
+          <view class="picker-chip">
+            <text class="picker-caption">选择时间</text>
+            <text class="picker-value">{{timePickerState.signupEndAt.time || '点击选择'}}</text>
+          </view>
+        </picker>
+      </view>
+      <text class="list-meta">已选：{{timePickerState.signupEndAt.label}}</text>
     </view>
     <view class="field">
       <text class="label">比赛开始</text>
-      <input class="input" value="{{form.startAt}}" data-field="form.startAt" placeholder="例如 2026-03-21T09:00:00" bindinput="updateField" />
+      <view class="time-picker-grid">
+        <picker mode="date" value="{{timePickerState.startAt.date || pickerDefaults.date}}" data-field="startAt" bindchange="handleDateChange">
+          <view class="picker-chip">
+            <text class="picker-caption">选择日期</text>
+            <text class="picker-value">{{timePickerState.startAt.date || '点击选择'}}</text>
+          </view>
+        </picker>
+        <picker mode="time" value="{{timePickerState.startAt.time || pickerDefaults.time}}" data-field="startAt" bindchange="handleTimeChange">
+          <view class="picker-chip">
+            <text class="picker-caption">选择时间</text>
+            <text class="picker-value">{{timePickerState.startAt.time || '点击选择'}}</text>
+          </view>
+        </picker>
+      </view>
+      <text class="list-meta">已选：{{timePickerState.startAt.label}}</text>
     </view>
     <view class="field">
       <text class="label">比赛结束</text>
-      <input class="input" value="{{form.endAt}}" data-field="form.endAt" placeholder="例如 2026-03-22T18:30:00" bindinput="updateField" />
+      <view class="time-picker-grid">
+        <picker mode="date" value="{{timePickerState.endAt.date || pickerDefaults.date}}" data-field="endAt" bindchange="handleDateChange">
+          <view class="picker-chip">
+            <text class="picker-caption">选择日期</text>
+            <text class="picker-value">{{timePickerState.endAt.date || '点击选择'}}</text>
+          </view>
+        </picker>
+        <picker mode="time" value="{{timePickerState.endAt.time || pickerDefaults.time}}" data-field="endAt" bindchange="handleTimeChange">
+          <view class="picker-chip">
+            <text class="picker-caption">选择时间</text>
+            <text class="picker-value">{{timePickerState.endAt.time || '点击选择'}}</text>
+          </view>
+        </picker>
+      </view>
+      <text class="list-meta">已选：{{timePickerState.endAt.label}}</text>
     </view>
     <view class="field">
       <text class="label">比赛名额</text>

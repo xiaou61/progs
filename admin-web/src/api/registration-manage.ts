@@ -7,6 +7,11 @@ export type RegistrationManageItem = {
   status: 'REGISTERED' | 'CANCELLED' | 'REJECTED'
   attendanceStatus: 'PENDING' | 'PRESENT' | 'ABSENT'
   remark: string | null
+  checkinStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | null
+  checkinMethod: string | null
+  checkinSubmittedAt: string | null
+  checkinReviewedAt: string | null
+  checkinReviewRemark: string | null
 }
 
 export type ManualRegistrationPayload = {
@@ -44,4 +49,17 @@ export async function markRegistrationAttendance(
     body: { attendanceStatus }
   })
   return result.marked
+}
+
+export async function reviewRegistrationCheckin(
+  registrationId: number,
+  status: 'APPROVED' | 'REJECTED',
+  reason?: string
+) {
+  const payload = reason ? { status, reason } : { status }
+  const result = await request<{ reviewed: boolean }>(`/api/admin/registrations/${registrationId}/checkin-review`, {
+    method: 'POST',
+    body: payload
+  })
+  return result.reviewed
 }

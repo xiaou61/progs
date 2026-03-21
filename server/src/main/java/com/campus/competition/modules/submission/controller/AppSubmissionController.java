@@ -34,4 +34,10 @@ public class AppSubmissionController {
   public ApiResponse<List<SubmissionSummary>> listByCompetition(@PathVariable Long competitionId) {
     return ApiResponse.success(submissionService.listByCompetition(competitionId));
   }
+
+  @GetMapping("/user/{userId}")
+  public ApiResponse<List<SubmissionSummary>> listByUser(@PathVariable Long userId) {
+    AuthContext.requireUser(userId);
+    return ApiResponse.success(submissionService.listByUser(userId));
+  }
 }

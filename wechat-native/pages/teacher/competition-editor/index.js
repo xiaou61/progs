@@ -6,7 +6,15 @@ const {
   updateTeacherCompetition,
   updateTeacherCompetitionFeature
 } = require('../../../services/competition')
+const {
+  buildDefaultPickerValue,
+  formatPickerDateTimeLabel,
+  mergeDateTimeValue,
+  splitDateTimeValue
+} = require('../../../utils/datetime')
 const { getRoleCode, getSession, requireLogin } = require('../../../utils/auth')
+
+const TIME_FIELDS = ['signupStartAt', 'signupEndAt', 'startAt', 'endAt']
 
 function buildEmptyForm() {
   return {
@@ -28,6 +36,34 @@ function buildFeatureForm() {
   }
 }
 
+function buildCompetitionForm(item) {
+  if (!item) {
+    return buildEmptyForm()
+  }
+  return {
+    title: item.title,
+    description: item.description,
+    signupStartAt: item.signupStartAt,
+    signupEndAt: item.signupEndAt,
+    startAt: item.startAt,
+    endAt: item.endAt,
+    quota: item.quota,
+    participantType: item.participantType || 'TEACHER_ONLY'
+  }
+}
+
+function buildTimePickerState(form) {
+  return TIME_FIELDS.reduce((state, field) => {
+    const parts = splitDateTimeValue(form[field])
+    state[field] = {
+      date: parts.date,
+      time: parts.time,
+      label: formatPickerDateTimeLabel(parts.date, parts.time)
+    }
+    return state
+  }, {})
+}
+
 function resolveParticipantTypeLabel(participantType) {
   return participantType === 'STUDENT_ONLY' ? '仅学生参加' : '仅老师参加'
 }
@@ -41,6 +77,8 @@ Page({
     success: '',
     selectedCompetitionId: null,
     form: buildEmptyForm(),
+    pickerDefaults: buildDefaultPickerValue(),
+    timePickerState: buildTimePickerState(buildEmptyForm()),
     featureForm: buildFeatureForm(),
     competitions: [],
     myCompetitions: []
@@ -77,10 +115,44 @@ Page({
   resetForm() {
     this.setData({
       form: buildEmptyForm(),
+      timePickerState: buildTimePickerState(buildEmptyForm()),
       featureForm: buildFeatureForm(),
       selectedCompetitionId: null,
       error: '',
       success: ''
+    })
+  },
+
+  handleDateChange(event) {
+    this.updateDateTimeField(event.currentTarget.dataset.field, {
+      date: event.detail.value
+    })
+  },
+
+  handleTimeChange(event) {
+    this.updateDateTimeField(event.currentTarget.dataset.field, {
+      time: event.detail.value
+    })
+  },
+
+  updateDateTimeField(field, patch) {
+    const pickerDefaults = this.data.pickerDefaults || buildDefaultPickerValue()
+    const currentParts = this.data.timePickerState[field] || {
+      date: '',
+      time: '',
+      label: formatPickerDateTimeLabel('', '')
+    }
+    const nextDate = patch.date || currentParts.date || pickerDefaults.date
+    const nextTime = patch.time || currentParts.time || pickerDefaults.time
+    const nextValue = mergeDateTimeValue(nextDate, nextTime)
+
+    this.setData({
+      [`form.${field}`]: nextValue,
+      [`timePickerState.${field}`]: {
+        date: nextDate,
+        time: nextTime,
+        label: formatPickerDateTimeLabel(nextDate, nextTime)
+      }
     })
   },
 
@@ -93,16 +165,8 @@ Page({
 
     this.setData({
       selectedCompetitionId: item.id,
-      form: {
-        title: item.title,
-        description: item.description,
-        signupStartAt: item.signupStartAt,
-        signupEndAt: item.signupEndAt,
-        startAt: item.startAt,
-        endAt: item.endAt,
-        quota: item.quota,
-        participantType: item.participantType || 'TEACHER_ONLY'
-      },
+      form: buildCompetitionForm(item),
+      timePickerState: buildTimePickerState(buildCompetitionForm(item)),
       featureForm: {
         recommended: Boolean(item.recommended),
         pinned: Boolean(item.pinned)
@@ -132,18 +196,11 @@ Page({
 
       const target = myCompetitions.find((item) => item.id === targetId)
       if (target) {
+        const form = buildCompetitionForm(target)
         this.setData({
           selectedCompetitionId: target.id,
-          form: {
-            title: target.title,
-            description: target.description,
-            signupStartAt: target.signupStartAt,
-            signupEndAt: target.signupEndAt,
-            startAt: target.startAt,
-            endAt: target.endAt,
-            quota: target.quota,
-            participantType: target.participantType || 'TEACHER_ONLY'
-          },
+          form,
+          timePickerState: buildTimePickerState(form),
           featureForm: {
             recommended: Boolean(target.recommended),
             pinned: Boolean(target.pinned)
@@ -198,7 +255,9 @@ Page({
       endAt: this.data.form.endAt.trim(),
       quota: Number(this.data.form.quota),
       participantType,
-      advisorTeacherId: participantType === 'STUDENT_ONLY' ? session.userId : null
+      advisorTeacherId: participantType === 'STUDENT_ONLY' ? session.userId : null,
+      recommended: this.data.featureForm.recommended,
+      pinned: this.data.featureForm.pinned
     }
   },
 

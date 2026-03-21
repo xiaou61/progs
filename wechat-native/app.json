@@ -10,6 +10,7 @@
     "pages/competition/checkin/index",
     "pages/competition/submission/index",
     "pages/competition/result/index",
+    "pages/competition/portfolio/index",
     "pages/message/index",
     "pages/message/chat/index",
     "pages/points/index",

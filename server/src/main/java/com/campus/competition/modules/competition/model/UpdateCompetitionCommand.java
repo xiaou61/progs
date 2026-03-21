@@ -13,7 +13,9 @@ public record UpdateCompetitionCommand(
   Integer quota,
   String status,
   String participantType,
-  Long advisorTeacherId
+  Long advisorTeacherId,
+  Boolean recommended,
+  Boolean pinned
 ) {
   public UpdateCompetitionCommand(
     Long organizerId,
@@ -26,6 +28,6 @@ public record UpdateCompetitionCommand(
     Integer quota,
     String status
   ) {
-    this(organizerId, title, description, signupStartAt, signupEndAt, startAt, endAt, quota, status, null, null);
+    this(organizerId, title, description, signupStartAt, signupEndAt, startAt, endAt, quota, status, null, null, null, null);
   }
 }

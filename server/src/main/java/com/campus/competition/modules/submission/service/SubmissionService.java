@@ -95,14 +95,17 @@ public class SubmissionService {
     if (submissionMapper != null) {
       return submissionMapper.selectList(Wrappers.<SubmissionEntity>lambdaQuery()
           .eq(SubmissionEntity::getUserId, userId)
-          .orderByDesc(SubmissionEntity::getSubmittedAt))
+          .orderByDesc(SubmissionEntity::getSubmittedAt)
+          .orderByDesc(SubmissionEntity::getId))
         .stream()
         .map(this::toSummary)
         .toList();
     }
     return submissions.values().stream()
       .filter(item -> item.userId().equals(userId))
-      .sorted(Comparator.comparing(SubmissionSummary::submittedAt).reversed())
+      .sorted(Comparator
+        .comparing(SubmissionSummary::submittedAt, Comparator.reverseOrder())
+        .thenComparing(SubmissionSummary::id, Comparator.reverseOrder()))
       .toList();
   }
 

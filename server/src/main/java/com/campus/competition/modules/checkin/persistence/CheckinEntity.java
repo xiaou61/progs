@@ -14,6 +14,9 @@ public class CheckinEntity {
   private Long userId;
   private String method;
   private LocalDateTime checkedAt;
+  private String status;
+  private String reviewRemark;
+  private LocalDateTime reviewedAt;
 
   public Long getId() {
     return id;
@@ -53,5 +56,29 @@ public class CheckinEntity {
 
   public void setCheckedAt(LocalDateTime checkedAt) {
     this.checkedAt = checkedAt;
+  }
+
+  public String getStatus() {
+    return status;
+  }
+
+  public void setStatus(String status) {
+    this.status = status;
+  }
+
+  public String getReviewRemark() {
+    return reviewRemark;
+  }
+
+  public void setReviewRemark(String reviewRemark) {
+    this.reviewRemark = reviewRemark;
+  }
+
+  public LocalDateTime getReviewedAt() {
+    return reviewedAt;
+  }
+
+  public void setReviewedAt(LocalDateTime reviewedAt) {
+    this.reviewedAt = reviewedAt;
   }
 }

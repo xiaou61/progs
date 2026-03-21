@@ -13,6 +13,8 @@ export type PublishCompetitionPayload = {
   quota: number
   participantType: CompetitionParticipantType
   advisorTeacherId: number | null
+  recommended: boolean
+  pinned: boolean
 }
 
 export async function publishCompetition(payload: PublishCompetitionPayload): Promise<number> {

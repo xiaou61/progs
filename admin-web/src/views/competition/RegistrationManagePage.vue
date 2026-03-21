@@ -8,6 +8,7 @@ import {
   fetchCompetitionRegistrations,
   manualAddRegistration,
   markRegistrationAttendance,
+  reviewRegistrationCheckin,
   rejectRegistration,
   type RegistrationManageItem
 } from '@/api/registration-manage'
@@ -29,6 +30,10 @@ const manualForm = reactive({
 const rejectForm = reactive({
   registrationId: 0,
   reason: ''
+})
+const checkinReviewForm = reactive({
+  registrationId: 0,
+  reason: '未到现场签到点'
 })
 
 const selectedCompetition = computed(() =>
@@ -66,6 +71,10 @@ const presentCount = computed(() =>
 
 const absentCount = computed(() =>
   registrations.value.filter((item) => item.attendanceStatus === 'ABSENT').length
+)
+
+const pendingCheckinCount = computed(() =>
+  registrations.value.filter((item) => item.checkinStatus === 'PENDING').length
 )
 
 function clearNotice() {
@@ -121,6 +130,29 @@ function resolveAttendanceLabel(attendanceStatus: RegistrationManageItem['attend
     return '已缺席'
   }
   return '待签到'
+}
+
+function resolveCheckinLabel(item: RegistrationManageItem) {
+  if (item.attendanceStatus === 'PRESENT' || item.checkinStatus === 'APPROVED') {
+    return '签到已通过'
+  }
+  if (item.attendanceStatus === 'ABSENT') {
+    return '已标记缺席'
+  }
+  if (item.checkinStatus === 'PENDING') {
+    return '待老师确认'
+  }
+  if (item.checkinStatus === 'REJECTED') {
+    return '申请已驳回，可重新提交'
+  }
+  return '尚未提交签到申请'
+}
+
+function formatDateTime(value: string | null) {
+  if (!value) {
+    return ''
+  }
+  return value.replace('T', ' ').slice(0, 16)
 }
 
 function resolveParticipantTypeLabel(participantType: CompetitionParticipantType) {
@@ -212,6 +244,17 @@ function closeRejectEditor() {
   rejectForm.reason = ''
 }
 
+function openCheckinRejectEditor(registrationId: number) {
+  clearNotice()
+  checkinReviewForm.registrationId = registrationId
+  checkinReviewForm.reason = '未到现场签到点'
+}
+
+function closeCheckinRejectEditor() {
+  checkinReviewForm.registrationId = 0
+  checkinReviewForm.reason = ''
+}
+
 async function submitReject() {
   clearNotice()
   if (!rejectForm.registrationId) {
@@ -250,6 +293,44 @@ async function handleAttendance(registrationId: number, attendanceStatus: 'PRESE
   }
 }
 
+async function handleApproveCheckin(registrationId: number) {
+  clearNotice()
+  actionLoading.value = true
+  try {
+    await reviewRegistrationCheckin(registrationId, 'APPROVED')
+    success.value = `报名记录 #${registrationId} 的签到申请已确认`
+    await loadRegistrations(selectedCompetitionId.value)
+  } catch (submitError) {
+    error.value = submitError instanceof Error ? submitError.message : '确认签到申请失败'
+  } finally {
+    actionLoading.value = false
+  }
+}
+
+async function submitRejectCheckin() {
+  clearNotice()
+  if (!checkinReviewForm.registrationId) {
+    error.value = '请选择要驳回的签到申请'
+    return
+  }
+  if (!checkinReviewForm.reason.trim()) {
+    error.value = '请输入驳回原因'
+    return
+  }
+
+  actionLoading.value = true
+  try {
+    await reviewRegistrationCheckin(checkinReviewForm.registrationId, 'REJECTED', checkinReviewForm.reason.trim())
+    success.value = `报名记录 #${checkinReviewForm.registrationId} 的签到申请已驳回`
+    closeCheckinRejectEditor()
+    await loadRegistrations(selectedCompetitionId.value)
+  } catch (submitError) {
+    error.value = submitError instanceof Error ? submitError.message : '驳回签到申请失败'
+  } finally {
+    actionLoading.value = false
+  }
+}
+
 onMounted(() => {
   void loadCompetitions()
 })
@@ -261,7 +342,7 @@ onMounted(() => {
       <div>
         <p class="eyebrow">Registration Manage</p>
         <h1>报名与参赛管理</h1>
-        <p>后台可直接查看报名记录、手动补录、驳回报名，并完成到场/缺席标记。</p>
+        <p>后台可直接查看报名记录、手动补录、驳回报名，并处理签到申请后再确认到场。</p>
       </div>
       <RouterLink class="nav-link" to="/competition/editor">返回比赛发布页</RouterLink>
     </header>
@@ -317,6 +398,10 @@ onMounted(() => {
             <strong>{{ absentCount }}</strong>
             <span>已缺席</span>
           </div>
+          <div class="stat-card">
+            <strong>{{ pendingCheckinCount }}</strong>
+            <span>待确认签到</span>
+          </div>
         </div>
 
         <div class="manual-card">
@@ -350,7 +435,7 @@ onMounted(() => {
         <div class="panel-head">
           <div>
             <h2>报名记录</h2>
-            <p>驳回后会失效，到场标记仅对有效报名开放。</p>
+            <p>驳回后会失效，到场标记仅对有效报名开放；用户提交签到申请后，需要老师确认才算到场。</p>
           </div>
         </div>
 
@@ -377,6 +462,13 @@ onMounted(() => {
             <p class="remark-line">
               备注：{{ item.remark || '暂无备注' }}
             </p>
+            <p class="remark-line">
+              签到申请：{{ resolveCheckinLabel(item) }}
+              <template v-if="item.checkinSubmittedAt"> · 提交于 {{ formatDateTime(item.checkinSubmittedAt) }}</template>
+            </p>
+            <p v-if="item.checkinReviewRemark" class="remark-line">
+              驳回原因：{{ item.checkinReviewRemark }}
+            </p>
             <div class="action-row">
               <button
                 class="ghost-button"
@@ -389,10 +481,18 @@ onMounted(() => {
               <button
                 class="secondary-button"
                 type="button"
-                :disabled="actionLoading || item.status !== 'REGISTERED'"
-                @click="handleAttendance(item.id, 'PRESENT')"
+                :disabled="actionLoading || item.status !== 'REGISTERED' || item.checkinStatus !== 'PENDING'"
+                @click="handleApproveCheckin(item.id)"
               >
-                标记到场
+                确认签到
+              </button>
+              <button
+                class="ghost-button"
+                type="button"
+                :disabled="actionLoading || item.status !== 'REGISTERED' || item.checkinStatus !== 'PENDING'"
+                @click="openCheckinRejectEditor(item.id)"
+              >
+                驳回签到申请
               </button>
               <button
                 class="danger-button"
@@ -414,6 +514,20 @@ onMounted(() => {
                 </button>
                 <button class="danger-button" type="button" :disabled="actionLoading" @click="submitReject">
                   {{ actionLoading ? '提交中...' : '确认驳回' }}
+                </button>
+              </div>
+            </div>
+            <div v-if="checkinReviewForm.registrationId === item.id" class="reject-editor">
+              <label class="field">
+                <span>驳回签到原因</span>
+                <textarea v-model="checkinReviewForm.reason" placeholder="请输入驳回签到申请的原因"></textarea>
+              </label>
+              <div class="action-row reject-actions">
+                <button class="ghost-button" type="button" :disabled="actionLoading" @click="closeCheckinRejectEditor">
+                  取消
+                </button>
+                <button class="danger-button" type="button" :disabled="actionLoading" @click="submitRejectCheckin">
+                  {{ actionLoading ? '提交中...' : '确认驳回签到' }}
                 </button>
               </div>
             </div>

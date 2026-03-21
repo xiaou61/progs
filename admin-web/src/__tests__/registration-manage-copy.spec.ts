@@ -11,5 +11,8 @@ describe('registration manage copy', () => {
 
     expect(source).not.toContain('请输入学生用户编号')
     expect(source).not.toContain('prompt(')
+    expect(source).toContain('待老师确认')
+    expect(source).toContain('确认签到')
+    expect(source).toContain('驳回签到申请')
   })
 })

@@ -35,8 +35,25 @@ function resolveHomeRoute(menuKey) {
   return '/pages/home/index'
 }
 
+function resolveOverviewRoute(cardKey) {
+  if (cardKey === 'my-competitions') {
+    return '/pages/competition/list/index'
+  }
+  if (cardKey === 'submitted-works') {
+    return '/pages/competition/portfolio/index?tab=works'
+  }
+  if (cardKey === 'award-results') {
+    return '/pages/competition/portfolio/index?tab=awards'
+  }
+  if (cardKey === 'total-points') {
+    return '/pages/points/index'
+  }
+  return '/pages/home/index'
+}
+
 module.exports = {
   HOME_MENU_TITLE_MAP,
   buildHomeMenus,
-  resolveHomeRoute
+  resolveHomeRoute,
+  resolveOverviewRoute
 }

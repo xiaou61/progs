@@ -1,0 +1,91 @@
+<view class="page">
+  <view class="hero">
+    <text class="eyebrow">My Portfolio</text>
+    <text class="title">我的成果</text>
+    <text class="desc">这里集中查看你提交过的作品记录和已发布的获奖结果，也可以继续进入对应比赛页面。</text>
+  </view>
+
+  <view class="panel">
+    <view class="tab-row">
+      <view
+        class="tab-chip {{activeTab === 'works' ? 'tab-chip-active' : ''}}"
+        data-tab="works"
+        bindtap="switchTab"
+      >
+        <text>我的作品</text>
+        <text class="tab-count">{{workCards.length}}</text>
+      </view>
+      <view
+        class="tab-chip {{activeTab === 'awards' ? 'tab-chip-active' : ''}}"
+        data-tab="awards"
+        bindtap="switchTab"
+      >
+        <text>我的获奖</text>
+        <text class="tab-count">{{awardCards.length}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="state-card">
+    <text>正在加载我的成果...</text>
+  </view>
+
+  <view wx:elif="{{error}}" class="state-card">
+    <text class="error-text">{{error}}</text>
+  </view>
+
+  <block wx:else>
+    <view wx:for="{{sections}}" wx:key="key" class="panel section-panel {{item.key === activeTab ? 'section-panel-active' : ''}}">
+      <view class="meta-row">
+        <text class="section-title">{{item.title}}</text>
+        <text class="mini-badge">{{item.key === 'works' ? workCards.length : awardCards.length}} 条</text>
+      </view>
+
+      <block wx:if="{{item.key === 'works'}}">
+        <view wx:if="{{workCards.length === 0}}" class="state-card muted-state">
+          <text>{{item.emptyText}}</text>
+        </view>
+        <view wx:else>
+          <view
+            wx:for="{{workCards}}"
+            wx:key="id"
+            class="list-item clickable-item"
+            data-url="{{item.actionRoute}}"
+            bindtap="openWorkCard"
+          >
+            <view class="meta-row">
+              <text class="list-title">{{item.competitionTitle}}</text>
+              <text class="badge">{{item.versionText}}</text>
+            </view>
+            <text class="list-meta">{{item.fileName}}</text>
+            <text class="list-meta">提交时间 {{item.submittedAtText}}</text>
+            <text class="jump-text">点击进入对应比赛作品页</text>
+          </view>
+        </view>
+      </block>
+
+      <block wx:elif="{{item.key === 'awards'}}">
+        <view wx:if="{{awardCards.length === 0}}" class="state-card muted-state">
+          <text>{{item.emptyText}}</text>
+        </view>
+        <view wx:else>
+          <view
+            wx:for="{{awardCards}}"
+            wx:key="id"
+            class="list-item clickable-item"
+            data-url="{{item.actionRoute}}"
+            bindtap="openAwardCard"
+          >
+            <view class="meta-row">
+              <text class="list-title">{{item.title}}</text>
+              <text class="badge">{{item.awardName}}</text>
+            </view>
+            <text class="list-meta">{{item.rankText}} · 成绩 {{item.score}} · 奖励积分 {{item.points}}</text>
+            <text class="list-meta">发布时间 {{item.publishedAtText}}</text>
+            <text class="jump-text">点击查看对应比赛结果</text>
+          </view>
+        </view>
+      </block>
+    </view>
+  </block>
+</view>

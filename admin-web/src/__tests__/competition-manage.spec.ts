@@ -68,7 +68,9 @@ describe('competition manage api', () => {
       endAt: '2026-03-22T18:00:00',
       quota: 80,
       participantType: 'STUDENT_ONLY',
-      advisorTeacherId: 2001
+      advisorTeacherId: 2001,
+      recommended: false,
+      pinned: false
     })
 
     expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/admin/competitions', { method: 'GET' })
@@ -87,7 +89,9 @@ describe('competition manage api', () => {
         endAt: '2026-03-22T18:00:00',
         quota: 80,
         participantType: 'STUDENT_ONLY',
-        advisorTeacherId: 2001
+        advisorTeacherId: 2001,
+        recommended: false,
+        pinned: false
       })
     })
     expect(list[0]?.recommended).toBe(true)
@@ -145,7 +149,9 @@ describe('competition manage api', () => {
       quota: 120,
       status: 'PUBLISHED',
       participantType: 'TEACHER_ONLY',
-      advisorTeacherId: null
+      advisorTeacherId: null,
+      recommended: false,
+      pinned: false
     })
     await updateCompetitionFeature(9, {
       recommended: true,
@@ -169,7 +175,9 @@ describe('competition manage api', () => {
         quota: 120,
         status: 'PUBLISHED',
         participantType: 'TEACHER_ONLY',
-        advisorTeacherId: null
+        advisorTeacherId: null,
+        recommended: false,
+        pinned: false
       })
     })
     expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/admin/competitions/9/feature', {

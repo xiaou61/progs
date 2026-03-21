@@ -1,6 +1,6 @@
 const { completeDailyCheckin, fetchDailyTaskOverview } = require('../../services/daily-task')
 const { getRoleCode, getSession, logoutSession, requireLogin } = require('../../utils/auth')
-const { buildHomeMenus, HOME_MENU_TITLE_MAP, resolveHomeRoute } = require('../../utils/home')
+const { buildHomeMenus, HOME_MENU_TITLE_MAP, resolveHomeRoute, resolveOverviewRoute } = require('../../utils/home')
 const { buildOverviewCards, resolveDailyCheckinLabel, resolveShareTaskLabel, summarizeTaskProgress } = require('../../utils/task')
 const { buildLoginRoute } = require('../../utils/routes')
 
@@ -86,6 +86,13 @@ Page({
     const menuKey = event.currentTarget.dataset.key
     wx.navigateTo({
       url: resolveHomeRoute(menuKey)
+    })
+  },
+
+  openOverviewCard(event) {
+    const cardKey = event.currentTarget.dataset.key
+    wx.navigateTo({
+      url: resolveOverviewRoute(cardKey)
     })
   },
 

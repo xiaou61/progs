@@ -2,17 +2,38 @@
   <view class="hero">
     <text class="eyebrow">Submission</text>
     <text class="title">作品上传</text>
-    <text class="desc">当前已接入真实作品提交接口，并可回显当前账号的版本记录。</text>
+    <text class="desc">按步骤完成选文件、确认信息和提交记录，最新版本会自动作为评审依据。</text>
   </view>
 
   <view class="panel">
     <text class="section-title">{{competitionTitle}}</text>
     <text class="section-desc">{{competitionDesc}}</text>
 
+    <view class="step-list">
+      <view class="step-item">
+        <text class="mini-badge">第 1 步</text>
+        <text class="step-title">选择本地作品文件</text>
+        <text class="list-meta">支持先从聊天记录或本地目录选文件，再进入正式提交。</text>
+      </view>
+      <view class="step-item">
+        <text class="mini-badge">第 2 步</text>
+        <text class="step-title">确认文件信息和覆盖方式</text>
+        <text class="list-meta">检查文件名、大小，以及是否允许覆盖已提交版本。</text>
+      </view>
+      <view class="step-item">
+        <text class="mini-badge">第 3 步</text>
+        <text class="step-title">提交作品记录</text>
+        <text class="list-meta">提交成功后会生成新的版本记录，最新版本会作为评审依据。</text>
+      </view>
+    </view>
+
     <view class="field">
-      <text class="label">待上传文件</text>
-      <text class="list-meta">{{selectedFileName ? selectedFileName : '尚未选择本地文件'}}</text>
-      <text wx:if="{{selectedFileSizeLabel}}" class="list-meta">大小 {{selectedFileSizeLabel}}</text>
+      <text class="label">已选文件</text>
+      <view class="file-summary-card">
+        <text class="list-title">{{selectedFileName ? selectedFileName : '尚未选择本地文件'}}</text>
+        <text class="list-meta">{{selectedFileSummary}}</text>
+        <text wx:if="{{selectedFileSizeLabel}}" class="list-meta">文件大小：{{selectedFileSizeLabel}}</text>
+      </view>
       <button class="secondary-btn" disabled="{{loading || submitting}}" bindtap="chooseLocalFile">
         {{selectedFileName ? '重新选择文件' : '选择本地文件'}}
       </button>
@@ -22,10 +43,12 @@
       <text class="label">允许覆盖已提交版本</text>
       <switch checked="{{reuploadAllowed}}" color="#c86c31" data-field="reuploadAllowed" bindchange="updateField" />
     </view>
+    <text class="muted-text">打开后，本次提交会覆盖同一比赛下你之前的作品版本；关闭时将遵循系统是否允许重传的设置。</text>
 
     <text wx:if="{{error}}" class="error-text">{{error}}</text>
     <text wx:if="{{success}}" class="success-text">{{success}}</text>
 
+    <text class="section-desc">版本记录会保留提交时间，方便你回看历史版本，最新版本会作为评审依据。</text>
     <view class="version-list">
       <view wx:if="{{!loading && versionCards.length === 0}}" class="list-item">
         <text>当前还没有提交记录，上传后会显示在这里。</text>
@@ -38,7 +61,7 @@
     </view>
 
     <button class="primary-btn" loading="{{submitting}}" disabled="{{loading || submitting}}" bindtap="submitWork">
-      {{submitting ? '提交中...' : '上传新版本'}}
+      {{submitting ? '提交中...' : '提交作品记录'}}
     </button>
   </view>
 </view>
