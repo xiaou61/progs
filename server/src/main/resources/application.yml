@@ -15,6 +15,10 @@ campus:
     submissions-dir: D:/campus-uploads/submissions
     profile-dir: D:/campus-uploads/profile
 
+app:
+  auth:
+    token-secret: 123456
+
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
