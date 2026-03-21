@@ -36,6 +36,40 @@ function buildSelectedFileSummary(fileName, sizeLabel) {
   return sizeLabel ? `已选择 ${fileName}，大小 ${sizeLabel}` : `已选择 ${fileName}`
 }
 
+function buildSelectedFileState(filePath, fileName, size) {
+  const sizeLabel = formatFileSize(size)
+  return {
+    selectedFilePath: filePath || '',
+    selectedFileName: fileName || '',
+    selectedFileSizeLabel: sizeLabel,
+    selectedFileSummary: buildSelectedFileSummary(fileName || '', sizeLabel)
+  }
+}
+
+function resolveChosenFile(result) {
+  const tempFile = result && Array.isArray(result.tempFiles) ? result.tempFiles[0] : null
+  const tempFilePath = tempFile && (
+    tempFile.path ||
+    tempFile.tempFilePath ||
+    tempFile.filePath
+  )
+  const fallbackPath = result && Array.isArray(result.tempFilePaths) ? result.tempFilePaths[0] : ''
+  const filePath = tempFilePath || fallbackPath || ''
+
+  if (!tempFile && !filePath) {
+    return null
+  }
+
+  const fileName = (tempFile && tempFile.name) || resolveWorkFileName(filePath) || '未命名文件'
+  const size = tempFile && tempFile.size ? tempFile.size : 0
+
+  return {
+    filePath,
+    fileName,
+    size
+  }
+}
+
 Page({
   data: {
     competitionId: 0,
@@ -100,11 +134,7 @@ Page({
         competitionTitle: currentCompetition ? currentCompetition.title : this.data.competitionTitle,
         competitionDesc: currentCompetition ? currentCompetition.description : this.data.competitionDesc,
         versionCards,
-        fileUrl: versionCards.length > 0 ? versionCards[0].fileUrl : '',
-        selectedFilePath: '',
-        selectedFileName: '',
-        selectedFileSizeLabel: '',
-        selectedFileSummary: buildSelectedFileSummary('', '')
+        fileUrl: versionCards.length > 0 ? versionCards[0].fileUrl : ''
       })
     } catch (error) {
       this.setData({
@@ -132,16 +162,11 @@ Page({
       count: 1,
       type: 'file',
       success: (result) => {
-        const file = result && Array.isArray(result.tempFiles) ? result.tempFiles[0] : null
+        const file = resolveChosenFile(result)
         if (!file) {
           return
         }
-        this.setData({
-          selectedFilePath: file.path || '',
-          selectedFileName: file.name || '未命名文件',
-          selectedFileSizeLabel: formatFileSize(file.size),
-          selectedFileSummary: buildSelectedFileSummary(file.name || '未命名文件', formatFileSize(file.size))
-        })
+        this.setData(buildSelectedFileState(file.filePath, file.fileName, file.size))
       },
       fail: (error) => {
         if (error && typeof error.errMsg === 'string' && error.errMsg.includes('cancel')) {
@@ -183,7 +208,8 @@ Page({
       })
       this.setData({
         success: `作品提交成功，记录编号 #${submissionId}`,
-        fileUrl: uploadResult.fileUrl
+        fileUrl: uploadResult.fileUrl,
+        ...buildSelectedFileState('', '', 0)
       })
       await this.loadSubmissionState()
     } catch (error) {
